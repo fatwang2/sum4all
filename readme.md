@@ -2,5 +2,14 @@
 ![Alt text](image.png)
 ![Alt text](image-1.png)
 ![Alt text](image-2.png)
-1. 需注册https://bibigpt.co/r/90nEPW，获取key，注册免费有60min时长
-2. 需在config.py和config.json中新增video_key参数，值为上面的注册得到的key
+# 安装
+使用管理员口令在线安装即可
+#installp https://github.com/fatwang2/sum4all.git
+安装成功后，根据提示使用#scanp 命令来扫描新插件
+
+# 申请
+通过链接注册 https://bibigpt.co/r/90nEPW，获取key，注册免费有60min时长
+
+# 配置
+- 服务器部署：复制插件目录的config.json.template文件并重命名为config.json，在sum_key字段填入申请的key，
+- docker部署：参考项目docker部署的插件使用，在挂载的config.json配置文件内增加sum4all插件的配置参数，如下图，每次重启项目，需要使用 #installp 指令重新安装
