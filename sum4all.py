@@ -7,18 +7,36 @@ from plugins import *
 from config import conf
 
 @plugins.register(
-    name="bibigpt",
+    name="sum4all",
     desire_priority=2,
     hidden=False,
-    desc="A plugin for summarizing videos",
-    version="0.0.1",
+    desc="A plugin for summarizing videos and articels",
+    version="0.0.2",
     author="fatwang2",
 )
-class bibigpt(Plugin):
+class sum4all(Plugin):
     def __init__(self):
         super().__init__()
-        self.handlers[Event.ON_HANDLE_CONTEXT] = self.on_handle_context
-        print("[bibigpt] inited")
+        try:
+        # 读取配置文件
+            config_path = os.path.join(os.path.dirname(__file__), "config.json")
+            with open(config_path, "r", encoding="utf-8") as f:
+                conf = json.load(f)
+        
+        # 从配置中取得 sum_key
+            self.sum_key = conf["sum4all"]["sum_key"]
+        
+        # 设置事件处理函数
+            self.handlers[Event.ON_HANDLE_CONTEXT] = self.on_handle_context
+        
+        # 初始化成功日志
+            logger.info("sum4all inited.")
+        
+        except Exception as e:
+        # 初始化失败日志
+            logger.warn("sum4all init failed.")
+        # 抛出异常
+            raise e
 
     def on_handle_context(self, e_context: EventContext):
         content = e_context["context"].content
@@ -33,10 +51,8 @@ class bibigpt(Plugin):
                 "url": content,
                 "includeDetail": False
             })            
-            video_key = conf().get("video_key")  # 获取配置文件中的video_key
-
             try:
-                api_url = f"https://bibigpt.co/api/open/{video_key}"
+                api_url = f"https://bibigpt.co/api/open/{self.sum_key}"
                 response = requests.request("POST",api_url, headers=headers, data=payload)
                 response.raise_for_status()
                 data = json.loads(response.text)
