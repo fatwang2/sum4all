@@ -71,14 +71,14 @@ class sum4all(Plugin):
                 summary_original = data.get('summary', 'Summary not available')
                 html_url = data.get('htmlUrl', 'HTML URL not available')
                 # 移除 "##摘要"、"## 亮点" 和 "-"
-                summary = summary_original.replace("## 摘要", "").replace("## 亮点", "").replace("- ", "")
+                summary = summary_original.replace("## 摘要\n", "").replace("## 亮点\n", "").replace("- ", "")
             except requests.exceptions.RequestException as e:
                 summary = f"An error occurred: {e}"
 
             reply = Reply()
             reply.type = ReplyType.TEXT
             reply.content = ""
-            reply.content = f"{summary}\n\n详情：{html_url}"
+            reply.content = f"{summary}\n详情：{html_url}"
 
             e_context["reply"] = reply
             e_context.action = EventAction.BREAK_PASS

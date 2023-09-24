@@ -4,7 +4,7 @@
 - V0.0.1，20230910，发布视频、文章总结插件
 
 ## 简介
-本项目为微信插件，需配合[chatgpt-on-wechat](https://github.com/zhayujie/chatgpt-on-wecha)项目使用，可以对文章、视频、播客内容做总结，覆盖b站、抖音、快手、小红书、微信等各个平台！具体效果如下
+本项目为微信插件，需配合[chatgpt-on-wechat](https://github.com/zhayujie/chatgpt-on-wechat)项目使用，可以对文章、视频、播客内容做总结，覆盖b站、抖音、快手、小红书、微信等各个平台！具体效果如下
 ![Alt text](image-5.png)
 ![Alt text](image.png)
 ![Alt text](image-1.png)
