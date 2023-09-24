@@ -43,14 +43,12 @@ class sum4all(Plugin):
             raise e
 
     def on_handle_context(self, e_context: EventContext):
-        context = e_context["context"]
-        content = context.content
-        print(f"Context Type: {context.type}")  # 打印消息类型
-        
+        context = e_context['context']        
         # 检查是否为 SHARING 类型的消息
         if context.type == ContextType.SHARING:
-            print(f"Sharing Content: {content}")
-            self.get_summary_from_url(content, e_context)
+            # 获取sharing信息
+            url = context.content
+            self.get_summary_from_url(url, e_context)
             return
         # 检查是否为 HTTP URL
         if re.match('https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+', content):
