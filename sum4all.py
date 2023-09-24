@@ -3,15 +3,19 @@ import json
 import re
 import plugins  # 导入自定义的插件模块
 from bridge.reply import Reply, ReplyType
+from bridge.context import ContextType
+from bridge import bridge
 from plugins import *
 from config import conf
+from common.log import logger
+import os
 
 @plugins.register(
     name="sum4all",
     desire_priority=2,
     hidden=False,
     desc="A plugin for summarizing videos and articels",
-    version="0.0.2",
+    version="0.0.3",
     author="fatwang2",
 )
 class sum4all(Plugin):
@@ -39,16 +43,22 @@ class sum4all(Plugin):
             raise e
 
     def on_handle_context(self, e_context: EventContext):
-        content = e_context["context"].content
-        
-        # Check if the content is a URL
+        context = e_context["context"]
+        content = context.content        
+        # 检查是否为 SHARING 类型的消息
+        if context.type == ContextType.SHARING:
+            self.get_summary_from_url(content, e_context)
+            return
+        # 检查是否为 HTTP URL
         if re.match('https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+', content):
-            
+            self.get_summary_from_url(content, e_context)
+            return
+    def get_summary_from_url(self, url: str, e_context: EventContext):    
             headers = {
                 'Content-Type': 'application/json',
             }
             payload = json.dumps({
-                "url": content,
+                "url": url,
                 "includeDetail": False
             })            
             try:
