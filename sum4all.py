@@ -68,10 +68,10 @@ class sum4all(Plugin):
                 response = requests.request("POST",api_url, headers=headers, data=payload)
                 response.raise_for_status()
                 data = json.loads(response.text)
-                summary = data.get('summary', 'Summary not available')
+                summary_original = data.get('summary', 'Summary not available')
                 html_url = data.get('htmlUrl', 'HTML URL not available')
-               
-
+                # 移除 "##摘要"、"## 亮点" 和 "-"
+                summary = summary_original.replace("## 摘要", "").replace("## 亮点", "").replace("- ", "")
             except requests.exceptions.RequestException as e:
                 summary = f"An error occurred: {e}"
 
