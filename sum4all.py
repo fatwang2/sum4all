@@ -44,9 +44,12 @@ class sum4all(Plugin):
 
     def on_handle_context(self, e_context: EventContext):
         context = e_context["context"]
-        content = context.content        
+        content = context.content
+        print(f"Context Type: {context.type}")  # 打印消息类型
+        
         # 检查是否为 SHARING 类型的消息
         if context.type == ContextType.SHARING:
+            print(f"Sharing Content: {content}")
             self.get_summary_from_url(content, e_context)
             return
         # 检查是否为 HTTP URL
