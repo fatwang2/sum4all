@@ -49,8 +49,7 @@ class sum4all(Plugin):
         # 检查是否为 SHARING 类型的消息
         if context.type == ContextType.SHARING:
             # 获取sharing信息
-            url = context.content
-            self.get_summary_from_url(url, e_context)
+            self.get_summary_from_url(content, e_context)
             return
         # 检查是否为 HTTP URL
         if re.match('https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+', content):
