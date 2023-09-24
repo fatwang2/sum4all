@@ -21,6 +21,7 @@ import os
 class sum4all(Plugin):
     def __init__(self):
         super().__init__()
+        self.handlers[Event.ON_HANDLE_CONTEXT] = self.on_handle_context
         try:
         # 读取配置文件
             config_path = os.path.join(os.path.dirname(__file__), "config.json")
@@ -43,7 +44,8 @@ class sum4all(Plugin):
             raise e
 
     def on_handle_context(self, e_context: EventContext):
-        context = e_context['context']        
+        context = e_context["context"]
+        content = context.content        
         # 检查是否为 SHARING 类型的消息
         if context.type == ContextType.SHARING:
             # 获取sharing信息
