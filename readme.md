@@ -20,7 +20,7 @@
 ![Alt text](image-4.png)
 
 ## 申请
-通过链接注册bibigpt服务 [注册地址](https://bibigpt.co/r/90nEPW)，获取总结key，注册免费享有60min时长
+通过链接注册bibigpt服务 [注册地址](https://bibigpt.co/r/90nEPW)，获取总结key，注册免费享有60min时长，请注意，只有 https://bibigpt.co/api/open/ 后面的部分是key
 
 ![Alt text](image-3.png)
 
