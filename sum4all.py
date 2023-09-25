@@ -15,7 +15,7 @@ import os
     desire_priority=2,
     hidden=False,
     desc="A plugin for summarizing videos and articels",
-    version="0.0.5",
+    version="0.0.6",
     author="fatwang2",
 )
 class sum4all(Plugin):
@@ -31,8 +31,8 @@ class sum4all(Plugin):
         # 从配置中取得 sum_key
             self.sum_key = conf["sum4all"]["sum_key"]
             self.outputLanguage = conf["sum4all"].get("outputLanguage", "zh-CN")
+            self.short_key = conf["sum4all"].get("short_key", "Wurd4RSCVSpbCpFd")
 
-        
         # 设置事件处理函数
             self.handlers[Event.ON_HANDLE_CONTEXT] = self.on_handle_context
         
@@ -93,8 +93,13 @@ class sum4all(Plugin):
                 summary_original = data.get('summary', 'Summary not available')
                 html_url = data.get('htmlUrl', 'HTML URL not available')
                 # 获取短链接
-                token = "Wurd4RSCVSpbCpFd" 
-                short_url = self.get_short_url(html_url, token) if html_url != 'HTML URL not available' else 'Short URL not available'
+                token = self.short_key 
+                short_url = self.get_short_url(html_url, token) 
+                
+                # 如果获取短链接失败，使用 html_url
+                if short_url is None:
+                    short_url = html_url if html_url != 'HTML URL not available' else 'URL not available'
+                
                 # 移除 "##摘要"、"## 亮点" 和 "-"
                 summary = summary_original.replace("## 摘要\n", "").replace("## 亮点\n", "").replace("- ", "")
             except requests.exceptions.RequestException as e:
