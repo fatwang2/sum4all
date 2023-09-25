@@ -55,6 +55,17 @@ class sum4all(Plugin):
         if re.match('https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+', content):
             self.get_summary_from_url(content, e_context)
             return
+    def get_short_url(self, long_url, token):
+        url = "https://v2.alapi.cn/api/url"
+        payload = f"token={token}&url={long_url}&type=dwz"
+        headers = {'Content-Type': "application/x-www-form-urlencoded"}
+        response = requests.request("POST", url, data=payload, headers=headers)
+        if response.status_code == 200:
+            res_data = response.json()
+            if res_data.get('code') == 200:
+                return res_data['data']['short_url']
+        return None
+
     def get_summary_from_url(self, url: str, e_context: EventContext):    
             headers = {
                 'Content-Type': 'application/json',
@@ -70,6 +81,9 @@ class sum4all(Plugin):
                 data = json.loads(response.text)
                 summary_original = data.get('summary', 'Summary not available')
                 html_url = data.get('htmlUrl', 'HTML URL not available')
+                # 获取短链接
+                token = "Wurd4RSCVSpbCpFd" 
+                short_url = self.get_short_url(html_url, token) if html_url != 'HTML URL not available' else 'Short URL not available'
                 # 移除 "##摘要"、"## 亮点" 和 "-"
                 summary = summary_original.replace("## 摘要\n", "").replace("## 亮点\n", "").replace("- ", "")
             except requests.exceptions.RequestException as e:
@@ -78,7 +92,7 @@ class sum4all(Plugin):
             reply = Reply()
             reply.type = ReplyType.TEXT
             reply.content = ""
-            reply.content = f"{summary}\n详情：{html_url}"
+            reply.content = f"{summary}\n详情：{short_url}"
 
             e_context["reply"] = reply
             e_context.action = EventAction.BREAK_PASS
