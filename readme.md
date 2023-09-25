@@ -1,5 +1,5 @@
 ## 更新日志
-- V0.0.6，20230925，支持用户配置自己的短链接服务token，新增短链接生成失败时的兜底机制
+- V0.0.6，20230925，支持用户配置自己的短链接服务key，新增短链接生成失败时的兜底机制
 - V0.0.5，20230925，支持配置语言参数，变量在config.json中，默认中文
 - V0.0.4，20230925，详情长链接转换成短链接，去除原有markdown格式标记，内容更简洁
 - V0.0.3，20230924，支持微信文章链接卡片识别，chatgpt-on-wechat需更新到最新代码
@@ -21,15 +21,41 @@
 
 ![Alt text](picture/image-4.png)
 
-## 申请
-通过链接注册bibigpt服务 [注册地址](https://bibigpt.co/r/90nEPW)，获取总结key，注册免费享有60min时长，请注意，只有 https://bibigpt.co/api/open/ 后面的部分是key
+## 申请 token
+内容总结服务（必选）：通过链接注册bibigpt服务 [注册地址](https://bibigpt.co/r/90nEPW)，获取总结key，注册免费享有60min时长，请注意，只有 `https://bibigpt.co/api/open/` 后面的部分是token
 
 ![Alt text](picture/image-3.png)
 
-## 配置
-服务器部署：复制插件目录的`config.json.template`文件,重命名为`config.json`，在`sum_key`字段填入申请的key
+短链接服务（可选）：为了消息的简洁，本插件默认使用我的个人短链接服务key，同时使用人数过多时会失败，默认返回长链接。追求使用体验的朋友，可以选择使用自己的alpai的key，申请地址：[alapi](https://alapi.cn)，key见下图
 
-docker部署：参考项目docker部署的插件使用，`config.json`配置文件内增加sum4all插件的配置参数
+![Alt text](picture/alapi.png)
+
+## 配置
+- 服务器部署：复制插件目录的`config.json.template`文件,重命名为`config.json`，配置参数即可
+- docker部署：参考项目docker部署的插件使用，`config.json`内增加sum4all插件的配置参数，操作见 [docker插件配置](https://github.com/zhayujie/chatgpt-on-wechat#3-%E6%8F%92%E4%BB%B6%E4%BD%BF%E7%94%A8)
+
+各参数含义如下：
+```
+sum_key：必填，内容总结服务key
+outputLanguage：非必填，输出语言，默认中文，其他支持列表见下
+short_key：非必填，alapi短链接服务key，根据需要自行填写
+```
+输出语言支持列表：
+```
+  English: 'en-US',
+  中文: 'zh-CN',
+  繁體中文: 'zh-TW',
+  日本語: 'ja-JP',
+  Italiano: 'it-IT',
+  Deutsch: 'de-DE',
+  Español: 'es-ES',
+  Français: 'fr-FR',
+  Nederlands: 'nl-NL',
+  한국어: 'ko-KR',
+  ភាសាខ្មែរ: 'km-KH',
+  हिंदी: 'hi-IN',
+```
+
 
 ## 后续计划
 - 支持切换不同的总结服务
