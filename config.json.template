@@ -1,5 +1,6 @@
 {
   "sum4all": {
-    "sum_key": ""
+    "sum_key": "",
+    "outputLanguage": "zh-CN"
   }
 }

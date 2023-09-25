@@ -15,7 +15,7 @@ import os
     desire_priority=2,
     hidden=False,
     desc="A plugin for summarizing videos and articels",
-    version="0.0.4",
+    version="0.0.5",
     author="fatwang2",
 )
 class sum4all(Plugin):
@@ -30,6 +30,8 @@ class sum4all(Plugin):
         
         # 从配置中取得 sum_key
             self.sum_key = conf["sum4all"]["sum_key"]
+            self.outputLanguage = conf["sum4all"].get("outputLanguage", "zh-CN")
+
         
         # 设置事件处理函数
             self.handlers[Event.ON_HANDLE_CONTEXT] = self.on_handle_context
@@ -73,6 +75,9 @@ class sum4all(Plugin):
             payload = json.dumps({
                 "url": url,
                 "includeDetail": False
+                "promptConfig": {
+                    "outputLanguage": self.outputLanguage
+                }
             })            
             try:
                 api_url = f"https://bibigpt.co/api/open/{self.sum_key}"
