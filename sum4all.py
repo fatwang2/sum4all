@@ -15,7 +15,7 @@ import os
     desire_priority=2,
     hidden=False,
     desc="A plugin for summarizing videos and articels",
-    version="0.0.3",
+    version="0.0.4",
     author="fatwang2",
 )
 class sum4all(Plugin):
@@ -92,7 +92,7 @@ class sum4all(Plugin):
             reply = Reply()
             reply.type = ReplyType.TEXT
             reply.content = ""
-            reply.content = f"{summary}\n\n详情：{short_url}"
+            reply.content = f"{summary}\n\n详细链接：{short_url}"
 
             e_context["reply"] = reply
             e_context.action = EventAction.BREAK_PASS
