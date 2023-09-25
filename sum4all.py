@@ -65,7 +65,7 @@ class sum4all(Plugin):
             "type": "zdwz"
         }        
         headers = {'Content-Type': "application/json"}
-        response = requests.request("POST", url, data=payload, headers=headers)
+        response = requests.request("POST", url, json=payload, headers=headers)
         if response.status_code == 200:
             res_data = response.json()
             if res_data.get('code') == 200:
