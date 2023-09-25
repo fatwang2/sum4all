@@ -1,4 +1,5 @@
 ## 更新日志
+- V0.0.7，20230926，去除短链接服务key的配置，自建短链接服务开放使用，无需单独申请
 - V0.0.6，20230925，支持用户配置自己的短链接服务key，新增短链接生成失败时的兜底机制
 - V0.0.5，20230925，支持配置语言参数，变量在config.json中，默认中文
 - V0.0.4，20230925，详情长链接转换成短链接，去除原有markdown格式标记，内容更简洁
@@ -22,13 +23,10 @@
 ![Alt text](picture/image-4.png)
 
 ## 申请 token
-内容总结服务（必选）：通过链接注册bibigpt服务 [注册地址](https://bibigpt.co/r/90nEPW)，获取总结key，注册免费享有60min时长，请注意，只有 `https://bibigpt.co/api/open/` 后面的部分是token
+内容总结服务：通过链接注册bibigpt服务 [注册地址](https://bibigpt.co/r/90nEPW)，获取总结key，注册免费享有60min时长，请注意，只有 `https://bibigpt.co/api/open/` 后面的部分是key
 
 ![Alt text](picture/image-3.png)
 
-短链接服务（可选）：为了消息的简洁，本插件默认使用我的个人短链接服务key，同时使用人数过多时会失败，默认返回长链接。追求使用体验的朋友，可以选择使用自己的alpai的key，申请地址：[alapi](https://alapi.cn)，key见下图
-
-![Alt text](picture/alapi.png)
 
 ## 配置
 - 服务器部署：复制插件目录的`config.json.template`文件,重命名为`config.json`，配置参数即可
@@ -38,7 +36,6 @@
 ```
 sum_key：必填，内容总结服务key
 outputLanguage：非必填，输出语言，默认中文，其他支持列表见下
-short_key：非必填，alapi短链接服务key，根据需要自行填写
 ```
 输出语言支持列表：
 ```
