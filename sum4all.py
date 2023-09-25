@@ -80,10 +80,10 @@ class sum4all(Plugin):
                 response.raise_for_status()
                 data = json.loads(response.text)
                 summary_original = data.get('summary', 'Summary not available')
-                html_url = data.get('htmlUrl', 'HTML URL not available')
+                long_url = data.get('htmlUrl', 'HTML URL not available')
                 # 获取短链接
                 token = "Wurd4RSCVSpbCpFd" 
-                short_url = self.get_short_url(html_url, token) if html_url != 'HTML URL not available' else 'Short URL not available'
+                short_url = self.get_short_url(long_url, token) if long_url != 'HTML URL not available' else 'Short URL not available'
                 # 移除 "##摘要"、"## 亮点" 和 "-"
                 summary = summary_original.replace("## 摘要\n", "").replace("## 亮点\n", "").replace("- ", "")
             except requests.exceptions.RequestException as e:
