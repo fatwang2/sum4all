@@ -72,13 +72,15 @@ class sum4all(Plugin):
             headers = {
                 'Content-Type': 'application/json',
             }
-            payload = json.dumps({
+            payload_params = {
                 "url": url,
-                "includeDetail": False
+                "includeDetail": False,
                 "promptConfig": {
                     "outputLanguage": self.outputLanguage
                 }
-            })            
+            }
+    
+            payload = json.dumps(payload_params)           
             try:
                 api_url = f"https://bibigpt.co/api/open/{self.sum_key}"
                 response = requests.request("POST",api_url, headers=headers, data=payload)
