@@ -15,13 +15,12 @@ import os
     desire_priority=2,
     hidden=False,
     desc="A plugin for summarizing videos and articels",
-    version="0.0.6",
+    version="0.0.7",
     author="fatwang2",
 )
 class sum4all(Plugin):
     def __init__(self):
         super().__init__()
-        self.handlers[Event.ON_HANDLE_CONTEXT] = self.on_handle_context
         try:
         # 读取配置文件
             config_path = os.path.join(os.path.dirname(__file__), "config.json")
@@ -31,7 +30,6 @@ class sum4all(Plugin):
         # 从配置中取得 sum_key
             self.sum_key = conf["sum4all"]["sum_key"]
             self.outputLanguage = conf["sum4all"].get("outputLanguage", "zh-CN")
-            self.short_key = conf["sum4all"].get("short_key", "Wurd4RSCVSpbCpFd")
 
         # 设置事件处理函数
             self.handlers[Event.ON_HANDLE_CONTEXT] = self.on_handle_context
@@ -57,19 +55,21 @@ class sum4all(Plugin):
         if re.match('https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+', content):
             self.get_summary_from_url(content, e_context)
             return
-    def get_short_url(self, long_url, token):
-        url = "https://v2.alapi.cn/api/url"
+    def get_short_url(self, long_url):
+        url = "https://s.fatwang2.com"
         payload = {
-            "token": token,
-            "url": long_url,
-            "type": "zdwz"
+            "url": long_url
         }        
         headers = {'Content-Type': "application/json"}
         response = requests.request("POST", url, json=payload, headers=headers)
         if response.status_code == 200:
             res_data = response.json()
-            if res_data.get('code') == 200:
-                return res_data['data']['short_url']
+            if res_data.get('status') == 200:
+                short_key = res_data.get('key', None)  # 获取 'key' 字段的值
+        
+                if short_key:
+                    # 拼接成完整的短链接
+                    return f"https://s.fatwang2.com{short_key}"
         return None
 
     def get_summary_from_url(self, url: str, e_context: EventContext):    
@@ -93,8 +93,7 @@ class sum4all(Plugin):
                 summary_original = data.get('summary', 'Summary not available')
                 html_url = data.get('htmlUrl', 'HTML URL not available')
                 # 获取短链接
-                token = self.short_key 
-                short_url = self.get_short_url(html_url, token) 
+                short_url = self.get_short_url(html_url) 
                 
                 # 如果获取短链接失败，使用 html_url
                 if short_url is None:
