@@ -59,8 +59,12 @@ class sum4all(Plugin):
             return
     def get_short_url(self, long_url, token):
         url = "https://v2.alapi.cn/api/url"
-        payload = f"token={token}&url={long_url}&type=zdwz"
-        headers = {'Content-Type': "application/x-www-form-urlencoded"}
+        payload = {
+            "token": token,
+            "url": long_url,
+            "type": "zdwz"
+        }        
+        headers = {'Content-Type': "application/json"}
         response = requests.request("POST", url, data=payload, headers=headers)
         if response.status_code == 200:
             res_data = response.json()
