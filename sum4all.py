@@ -15,7 +15,7 @@ import os
     desire_priority=2,
     hidden=False,
     desc="A plugin for summarizing videos and articels",
-    version="0.0.7",
+    version="0.0.8",
     author="fatwang2",
 )
 class sum4all(Plugin):
@@ -49,8 +49,12 @@ class sum4all(Plugin):
         # 检查是否为 SHARING 类型的消息
         if context.type == ContextType.SHARING:
             # 获取sharing信息
-            self.get_summary_from_url(content, e_context)
-            return
+            # 检查是否包含视频号及小程序的报错链接
+            if re.search(r'.*support\.weixin\.qq\.com/update.*|.*mp\.weixin\.qq\.com/mp/waerrpage.*', content):
+                raise Exception("Detected unsupported URL")
+            else:
+                self.get_summary_from_url(content, e_context)
+                return
         # 检查是否为 HTTP URL
         if re.match('https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+', content):
             self.get_summary_from_url(content, e_context)
