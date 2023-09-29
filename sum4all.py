@@ -30,7 +30,7 @@ class sum4all(Plugin):
         # 从配置中取得 sum_key
             self.sum_key = conf["sum4all"]["sum_key"]
             self.outputLanguage = conf["sum4all"].get("outputLanguage", "zh-CN")
-            self.group_reply = conf["sum4all"].get("group_reply", "False")
+            self.group_reply = conf["sum4all"]["group_reply"]
 
         # 设置事件处理函数
             self.handlers[Event.ON_HANDLE_CONTEXT] = self.on_handle_context
@@ -63,9 +63,10 @@ class sum4all(Plugin):
                     e_context.action = EventAction.BREAK_PASS
             else:
                 if isgroup:
-                    if self.group_reply == True:
+                    if self.group_reply:
                         logger.info("[sum4all] Summary URL : %s", content)
                         self.get_summary_from_url(content, e_context)
+                        return
                 else:
                     logger.info("[sum4all] Summary URL : %s", content)
                     self.get_summary_from_url(content, e_context)
