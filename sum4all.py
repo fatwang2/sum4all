@@ -50,9 +50,15 @@ class sum4all(Plugin):
         if context.type == ContextType.SHARING:
             # 获取sharing信息
             # 检查是否包含视频号及小程序的报错链接
-            if re.search(r'.*support\.weixin\.qq\.com/update.*|.*mp\.weixin\.qq\.com/mp/waerrpage.*', content):
-                raise Exception("Detected unsupported URL")
+            if re.search(r'.*finder\.video\.qq\.com.*|.*support\.weixin\.qq\.com/update.*|.*support\.weixin\.qq\.com/security.*|.*mp\.weixin\.qq\.com/mp/waerrpage.*', content):
+                logger.info(f"[sum4all]] Unsupported URL : {content}")
+                reply = Reply()
+                reply.type = ReplyType.TEXT
+                reply.content = "不支持总结小程序和视频号"
+                e_context["reply"] = reply
+                e_context.action = EventAction.BREAK_PASS
             else:
+                logger.info(f"[sum4all]] Summary URL : {content}")
                 self.get_summary_from_url(content, e_context)
                 return
         # 检查是否为 HTTP URL
