@@ -2,6 +2,6 @@
   "sum4all": {
     "sum_key": "u9KOZGSVLjKu",
     "outputLanguage": "zh-CN",
-    "group_reply": "False"
+    "group_reply": false
   }
 }
