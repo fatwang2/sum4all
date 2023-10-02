@@ -30,7 +30,7 @@ class sum4all(Plugin):
         # 从配置中取得 sum_key
             self.sum_key = conf["sum4all"]["sum_key"]
             self.outputLanguage = conf["sum4all"].get("outputLanguage", "zh-CN")
-            self.group_sharing = conf["sum4all"]["group_sharing", true]
+            self.group_sharing = conf["sum4all"].get["group_sharing", true]
 
         # 设置事件处理函数
             self.handlers[Event.ON_HANDLE_CONTEXT] = self.on_handle_context
