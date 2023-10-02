@@ -1,4 +1,5 @@
 ## 更新日志
+- V0.0.9，20231002，新增group_sharing参数，设为false时，群聊不自动总结卡片链接。新增对不支持链接的回复提示。
 - V0.0.8，20230927，屏蔽小程序与视频号链接，暂时不支持
 - V0.0.7，20230926，去除短链接服务key的配置，自建短链接服务开放使用，无需单独申请
 - V0.0.6，20230925，支持用户配置自己的短链接服务key，新增短链接生成失败时的兜底机制
@@ -24,7 +25,7 @@
 ![Alt text](picture/image-4.png)
 
 ## 申请 token
-内容总结服务：通过链接注册bibigpt服务 [注册地址](https://bibigpt.co/r/90nEPW)，获取总结key，注册免费享有60min时长，请注意，只有 `https://bibigpt.co/api/open/` 后面的部分是key
+内容总结服务：通过链接注册bibigpt服务 [注册地址](https://bibigpt.co/r/tfcGVE)，获取总结key，注册免费享有60min时长，请注意，只有 `https://bibigpt.co/api/open/` 后面的部分是key
 
 ![Alt text](picture/image-3.png)
 
