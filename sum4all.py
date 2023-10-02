@@ -15,7 +15,7 @@ import os
     desire_priority=2,
     hidden=False,
     desc="A plugin for summarizing videos and articels",
-    version="0.0.8",
+    version="0.0.9",
     author="fatwang2",
 )
 class sum4all(Plugin):
@@ -30,7 +30,7 @@ class sum4all(Plugin):
         # 从配置中取得 sum_key
             self.sum_key = conf["sum4all"]["sum_key"]
             self.outputLanguage = conf["sum4all"].get("outputLanguage", "zh-CN")
-            self.group_reply = conf["sum4all"]["group_reply"]
+            self.group_sharing = conf["sum4all"]["group_sharing"]
 
         # 设置事件处理函数
             self.handlers[Event.ON_HANDLE_CONTEXT] = self.on_handle_context
@@ -49,28 +49,38 @@ class sum4all(Plugin):
         content = context.content
         isgroup = e_context["context"].get("isgroup", False)
         url_match = re.match('https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+', content)
-        # 检查是否为 SHARING 类型的消息
-        if context.type == ContextType.SHARING or url_match:
-            if re.search(r'.*finder\.video\.qq\.com.*|.*support\.weixin\.qq\.com/update.*|.*support\.weixin\.qq\.com/security.*|.*mp\.weixin\.qq\.com/mp/waerrpage.*', content):
-                if isgroup:
+        unsupported_urls = re.search(r'.*finder\.video\.qq\.com.*|.*support\.weixin\.qq\.com/update.*|.*support\.weixin\.qq\.com/security.*|.*mp\.weixin\.qq\.com/mp/waerrpage.*', content)
+        if context.type == ContextType.SHARING:  #匹配卡片分享
+            if unsupported_urls:  #匹配不支持总结的卡片
+                if isgroup:  ##群聊中忽略
                     return
-                else:
+                else:  ##私聊回复不支持
                     logger.info("[sum4all] Unsupported URL : %s", content)
-                    reply = Reply()
-                    reply.type = ReplyType.TEXT
-                    reply.content = "不支持总结小程序和视频号"
+                    reply = Reply(type=ReplyType.TEXT, content="不支持总结小程序和视频号")
                     e_context["reply"] = reply
                     e_context.action = EventAction.BREAK_PASS
-            else:
-                if isgroup:
-                    if self.group_reply:
+            else:  #匹配支持总结的卡片
+                if isgroup:  #处理群聊总结
+                    if self.group_sharing:  #group_sharing = True进行总结，False则忽略。
                         logger.info("[sum4all] Summary URL : %s", content)
                         self.get_summary_from_url(content, e_context)
                         return
-                else:
+                    else:
+                        return
+                else:  #处理私聊总结
                     logger.info("[sum4all] Summary URL : %s", content)
                     self.get_summary_from_url(content, e_context)
                     return
+        elif url_match: #匹配URL链接
+            if unsupported_urls:  #匹配不支持总结的网址
+                logger.info("[sum4all] Unsupported URL : %s", content)
+                reply = Reply(type=ReplyType.TEXT, content="不支持总结小程序和视频号")
+                e_context["reply"] = reply
+                e_context.action = EventAction.BREAK_PASS
+            else:
+                logger.info("[sum4all] Summary URL : %s", content)
+                self.get_summary_from_url(content, e_context)
+                return
     
     def get_short_url(self, long_url):
         url = "https://s.fatwang2.com"
