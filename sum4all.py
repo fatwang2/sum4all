@@ -46,6 +46,8 @@ class sum4all(Plugin):
 
     def on_handle_context(self, e_context: EventContext):
         context = e_context["context"]
+        if context.type not in [ContextType.TEXT, ContextType.SHARING]:  # filter content no need solve
+            return
         content = context.content
         isgroup = e_context["context"].get("isgroup", False)
         url_match = re.match('https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+', content)
