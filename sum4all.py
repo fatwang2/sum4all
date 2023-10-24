@@ -15,7 +15,7 @@ import os
     desire_priority=2,
     hidden=False,
     desc="A plugin for summarizing videos and articels",
-    version="0.0.9",
+    version="0.1.0",
     author="fatwang2",
 )
 class sum4all(Plugin):
@@ -129,7 +129,7 @@ class sum4all(Plugin):
                     short_url = html_url if html_url != 'HTML URL not available' else 'URL not available'
                 
                 # 移除 "##摘要"、"## 亮点" 和 "-"
-                summary = summary_original.replace("## 摘要\n", "").replace("## 亮点\n", "").replace("- ", "")
+                summary = summary_original.split("详细版（支持对话追问）")[0].replace("## 摘要\n", "").replace("## 亮点\n", "").replace("- ", "")
             except requests.exceptions.RequestException as e:
                 summary = f"An error occurred: {e}"
 
