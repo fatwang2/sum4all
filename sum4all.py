@@ -13,7 +13,7 @@ import os
     desire_priority=2,
     hidden=False,
     desc="A plugin for summarizing videos and articels",
-    version="0.1.1",
+    version="0.1.2",
     author="fatwang2",
 )
 class sum4all(Plugin):
@@ -24,14 +24,10 @@ class sum4all(Plugin):
             conf = super().load_config()
             if not conf:
                 raise Exception("config.json not found")
-            # 检查 sum_key 是否存在
-            if "sum_key" not in conf["sum4all"]:
-                logger.error("sum_key not found in configuration.")
-                raise Exception("sum_key not found in configuration.")
             # 从配置中提取所需的设置
-            self.sum_key = conf["sum4all"]["sum_key"]
-            self.outputLanguage = conf.get("sum4all", {}).get("outputLanguage", "zh-CN")
-            self.group_sharing = conf.get("sum4all", {}).get("group_sharing", True)
+            self.sum_key = conf["sum_key"]
+            self.outputLanguage = conf["outputLanguage"]
+            self.group_sharing = conf["group_sharing"]
 
             # 设置事件处理函数
             self.handlers[Event.ON_HANDLE_CONTEXT] = self.on_handle_context

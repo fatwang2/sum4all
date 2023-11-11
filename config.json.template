@@ -1,7 +1,5 @@
 {
-  "sum4all": {
-    "sum_key": "",
-    "outputLanguage": "zh-CN",
-    "group_sharing": true
-  }
+  "sum_key": "",
+  "outputLanguage": "zh-CN",
+  "group_sharing": true
 }
