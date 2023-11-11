@@ -20,31 +20,6 @@ class sum4all(Plugin):
     def __init__(self):
         super().__init__()
         try:
-        # 读取配置文件
-            config_path = os.path.join(os.path.dirname(__file__), "config.json")
-            with open(config_path, "r", encoding="utf-8") as f:
-                conf = json.load(f)
-        
-        # 从配置中取得 sum_key
-            self.sum_key = conf["sum4all"]["sum_key"]
-            self.outputLanguage = conf["sum4all"].get("outputLanguage", "zh-CN")
-            self.group_sharing = conf["sum4all"].get("group_sharing", True)
-
-        # 设置事件处理函数
-            self.handlers[Event.ON_HANDLE_CONTEXT] = self.on_handle_context
-        
-        # 初始化成功日志
-            logger.info("sum4all inited.")
-        
-        except Exception as e:
-        # 初始化失败日志
-            logger.warn("sum4all init failed.")
-        # 抛出异常
-            raise e
-class sum4all(Plugin):
-    def __init__(self):
-        super().__init__()
-        try:
             # 使用父类的方法来加载配置
             conf = super().load_config()
             if not conf:
