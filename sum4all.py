@@ -1,12 +1,10 @@
 import requests
 import json
 import re
-import plugins  # 导入自定义的插件模块
+import plugins
 from bridge.reply import Reply, ReplyType
 from bridge.context import ContextType
-from bridge import bridge
 from plugins import *
-from config import conf
 from common.log import logger
 import os
 
@@ -43,6 +41,33 @@ class sum4all(Plugin):
             logger.warn("sum4all init failed.")
         # 抛出异常
             raise e
+class sum4all(Plugin):
+    def __init__(self):
+        super().__init__()
+        try:
+            # 使用父类的方法来加载配置
+            conf = super().load_config()
+            if not conf:
+                raise Exception("config.json not found")
+            # 检查 sum_key 是否存在
+            if "sum_key" not in conf["sum4all"]:
+                logger.error("sum_key not found in configuration.")
+                raise Exception("sum_key not found in configuration.")
+            # 从配置中提取所需的设置
+            self.sum_key = conf["sum4all"]["sum_key"]
+            self.outputLanguage = conf.get("sum4all", {}).get("outputLanguage", "zh-CN")
+            self.group_sharing = conf.get("sum4all", {}).get("group_sharing", True)
+
+            # 设置事件处理函数
+            self.handlers[Event.ON_HANDLE_CONTEXT] = self.on_handle_context
+
+            # 初始化成功日志
+            logger.info("sum4all inited.")
+        
+        except Exception as e:
+            # 初始化失败日志
+            logger.warn(f"sum4all init failed: {e}")
+            # 可以选择在这里处理异常，比如设置默认行为或记录错误
 
     def on_handle_context(self, e_context: EventContext):
         context = e_context["context"]
@@ -136,7 +161,7 @@ class sum4all(Plugin):
             reply = Reply()
             reply.type = ReplyType.TEXT
             reply.content = ""
-            reply.content = f"{summary}\n详细链接：{short_url}"
+            reply.content = f"{summary}详细链接：{short_url}"
 
             e_context["reply"] = reply
             e_context.action = EventAction.BREAK_PASS
