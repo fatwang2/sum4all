@@ -6,14 +6,14 @@ from bridge.reply import Reply, ReplyType
 from bridge.context import ContextType
 from plugins import *
 from common.log import logger
-import os
+
 
 @plugins.register(
     name="sum4all",
     desire_priority=2,
     hidden=False,
     desc="A plugin for summarizing videos and articels",
-    version="0.1.2",
+    version="0.1.3",
     author="fatwang2",
 )
 class sum4all(Plugin):
@@ -25,22 +25,34 @@ class sum4all(Plugin):
             if not conf:
                 raise Exception("config.json not found")
             # 从配置中提取所需的设置
-            self.sum_key = conf["sum_key"]
+            self.sum_service = conf["sum_service"]
+            self.bibigpt_key = conf["bibigpt_key"]
             self.outputLanguage = conf["outputLanguage"]
             self.group_sharing = conf["group_sharing"]
-
+            self.opensum_key = conf["opensum_key"]
+            self.open_ai_api_key = conf["open_ai_api_key"]
+            self.model = conf["model"]
+            self.open_ai_api_base = conf["open_ai_api_base"]
+            self.prompt = conf["prompt"]
             # 设置事件处理函数
             self.handlers[Event.ON_HANDLE_CONTEXT] = self.on_handle_context
-
             # 初始化成功日志
             logger.info("sum4all inited.")
         
         except Exception as e:
             # 初始化失败日志
             logger.warn(f"sum4all init failed: {e}")
-            # 可以选择在这里处理异常，比如设置默认行为或记录错误
-
     def on_handle_context(self, e_context: EventContext):
+        
+        
+        # 根据配置的服务进行不同的处理
+        if self.sum_service == "bibigpt":
+            self.handle_bibigpt(e_context)
+        elif self.sum_service == "openai":
+            self.handle_openai(e_context)
+        elif self.sum_service == "opensum":
+            self.handle_opensum(e_context)
+    def handle_bibigpt(self, e_context):
         context = e_context["context"]
         if context.type not in [ContextType.TEXT, ContextType.SHARING]:  # filter content no need solve
             return
@@ -61,13 +73,13 @@ class sum4all(Plugin):
                 if isgroup:  #处理群聊总结
                     if self.group_sharing:  #group_sharing = True进行总结，False则忽略。
                         logger.info("[sum4all] Summary URL : %s", content)
-                        self.get_summary_from_url(content, e_context)
+                        self.url(content, e_context)
                         return
                     else:
                         return
                 else:  #处理私聊总结
                     logger.info("[sum4all] Summary URL : %s", content)
-                    self.get_summary_from_url(content, e_context)
+                    self.url(content, e_context)
                     return
         elif url_match: #匹配URL链接
             if unsupported_urls:  #匹配不支持总结的网址
@@ -77,7 +89,7 @@ class sum4all(Plugin):
                 e_context.action = EventAction.BREAK_PASS
             else:
                 logger.info("[sum4all] Summary URL : %s", content)
-                self.get_summary_from_url(content, e_context)
+                self.url(content, e_context)
                 return
     
     def get_short_url(self, long_url):
@@ -97,7 +109,7 @@ class sum4all(Plugin):
                     return f"https://s.fatwang2.com{short_key}"
         return None
 
-    def get_summary_from_url(self, url: str, e_context: EventContext):    
+    def url(self, url: str, e_context: EventContext):    
             headers = {
                 'Content-Type': 'application/json',
             }
@@ -111,7 +123,7 @@ class sum4all(Plugin):
     
             payload = json.dumps(payload_params)           
             try:
-                api_url = f"https://bibigpt.co/api/open/{self.sum_key}"
+                api_url = f"https://bibigpt.co/api/open/{self.bibigpt_key}"
                 response = requests.request("POST",api_url, headers=headers, data=payload)
                 response.raise_for_status()
                 data = json.loads(response.text)
@@ -125,17 +137,102 @@ class sum4all(Plugin):
                     short_url = html_url if html_url != 'HTML URL not available' else 'URL not available'
                 
                 # 移除 "##摘要"、"## 亮点" 和 "-"
-                summary = summary_original.split("详细版（支持对话追问）")[0].replace("## 摘要\n", "").replace("## 亮点\n", "").replace("- ", "")
+                summary = summary_original.split("详细版（支持对话追问）")[0].replace("## 摘要\n", "📌一句话总结：").replace("## 亮点\n", "").replace("- ", "")
             except requests.exceptions.RequestException as e:
                 summary = f"An error occurred: {e}"
 
             reply = Reply()
             reply.type = ReplyType.TEXT
-            reply.content = ""
             reply.content = f"{summary}详细链接：{short_url}"
 
             e_context["reply"] = reply
             e_context.action = EventAction.BREAK_PASS
+    def handle_openai(self, e_context):
+        content = e_context["context"].content
+        meta = None      
+        # Check if the content is a URL
+        if re.match('https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+', content):
+            
+            headers = {
+                'Content-Type': 'application/json',
+                'WebPilot-Friend-UID': 'fatwang2',
+            }
+            payload = json.dumps({"link": content})
+            try:
+                api_url1 = "https://gpts.webpilot.ai/api/visit-web"
+                response1 = requests.request("POST",api_url1, headers=headers, data=payload)
+                response1.raise_for_status()
+                data = json.loads(response1.text)
+                meta= data.get('content','content not available')  # 获取data字段                
+
+            except requests.exceptions.RequestException as e:
+                meta = f"An error occurred: {e}"          
+
+        # 如果meta获取成功，发送请求到OpenAI
+        if meta:
+            try:
+                headers = {
+                    'Content-Type': 'application/json',
+                    'Authorization': f'Bearer {self.open_ai_api_key}'  # 使用你的OpenAI API密钥
+                }
+                data = {
+                    "model": self.model, 
+                    "messages": [
+                        {"role": "system", "content": self.prompt},
+                        {"role": "user", "content": meta}
+                    ]
+                }
+            
+                response = requests.post(f"{self.open_ai_api_base}/chat/completions", headers=headers, data=json.dumps(data))
+                response.raise_for_status()
+
+                # 处理响应数据
+                response_data = response.json()
+                # 这里可以根据你的需要处理响应数据
+                # 解析 JSON 并获取 content
+                if "choices" in response_data and len(response_data["choices"]) > 0:
+                    first_choice = response_data["choices"][0]
+                    if "message" in first_choice and "content" in first_choice["message"]:
+                        content = first_choice["message"]["content"]
+                    else:
+                        print("Content not found in the response")
+                else:
+                    print("No choices available in the response")
+            except requests.exceptions.RequestException as e:
+                # 处理可能出现的错误
+                logger.error(f"Error calling OpenAI API: {e}")
+            reply = Reply()
+            reply.type = ReplyType.TEXT
+            reply.content = f"{content}"            
+            e_context["reply"] = reply
+            e_context.action = EventAction.BREAK_PASS
+
+    def handle_opensum(self, e_context):
+        content = e_context["context"].content
+        
+        # Check if the content is a URL
+        if re.match('https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+', content):
+            
+            headers = {
+                'Content-Type': 'application/json',
+                'Authorization': f'Bearer {conf().get("opensum_key")}',  # Replace with your actual API key
+            }
+            payload = json.dumps({"link": content})
+            try:
+                api_url1 = "https://read.thinkwx.com/api/v1/article/summary"
+                response1 = requests.request("POST",api_url1, headers=headers, data=payload)
+                response1.raise_for_status()
+                data = json.loads(response1.text)
+                summary_data = data.get('data', {})  # 获取data字段                
+                summary = summary_data.get('summary', 'Summary not available')
+            except requests.exceptions.RequestException as e:
+                summary = f"An error occurred: {e}"
+            reply = Reply()
+            reply.type = ReplyType.TEXT
+            reply.content = f"{summary}"
+
+            e_context["reply"] = reply
+            e_context.action = EventAction.BREAK_PASS    
 
     def get_help_text(self, **kwargs):
         help_text = "输入url，直接为你总结，包括视频、文章等\n"
