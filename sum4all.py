@@ -215,7 +215,7 @@ class sum4all(Plugin):
             
             headers = {
                 'Content-Type': 'application/json',
-                'Authorization': f'Bearer {conf().get("opensum_key")}',  # Replace with your actual API key
+                'Authorization': f'Bearer {self.opensum_key}', 
             }
             payload = json.dumps({"link": content})
             try:
