@@ -13,7 +13,7 @@ import os
     desire_priority=2,
     hidden=False,
     desc="A plugin for summarizing videos and articels",
-    version="0.1.0",
+    version="0.1.1",
     author="fatwang2",
 )
 class sum4all(Plugin):
