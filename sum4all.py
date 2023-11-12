@@ -186,10 +186,10 @@ class sum4all(Plugin):
             try:
                 headers = {
                     'Content-Type': 'application/json',
-                    'Authorization': f'Bearer {self.sum4all_key}'  # 使用你的OpenAI API密钥
+                    'Authorization': f'Bearer {self.sum4all_key}'  # 使用你的sum4all key
                 }
                 data = {
-                    "model": sum4all, 
+                    "model": "sum4all", 
                     "messages": [
                         {"role": "system", "content": self.prompt},
                         {"role": "user", "content": meta}
