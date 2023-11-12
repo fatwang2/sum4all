@@ -207,6 +207,7 @@ class sum4all(Plugin):
                     first_choice = response_data["choices"][0]
                     if "message" in first_choice and "content" in first_choice["message"]:
                         content = first_choice["message"]["content"]
+                        content = content.replace("\\n", "\n")
                     else:
                         print("Content not found in the response")
                 else:
