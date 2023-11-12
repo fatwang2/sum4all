@@ -13,7 +13,7 @@ from common.log import logger
     desire_priority=2,
     hidden=False,
     desc="A plugin for summarizing videos and articels",
-    version="0.1.3",
+    version="0.1.4",
     author="fatwang2",
 )
 class sum4all(Plugin):
@@ -43,16 +43,6 @@ class sum4all(Plugin):
             # 初始化失败日志
             logger.warn(f"sum4all init failed: {e}")
     def on_handle_context(self, e_context: EventContext):
-        
-        
-        # 根据配置的服务进行不同的处理
-        if self.sum_service == "bibigpt":
-            self.handle_bibigpt(e_context)
-        elif self.sum_service == "openai":
-            self.handle_openai(e_context)
-        elif self.sum_service == "opensum":
-            self.handle_opensum(e_context)
-    def handle_bibigpt(self, e_context):
         context = e_context["context"]
         if context.type not in [ContextType.TEXT, ContextType.SHARING]:  # filter content no need solve
             return
@@ -90,9 +80,15 @@ class sum4all(Plugin):
             else:
                 logger.info("[sum4all] Summary URL : %s", content)
                 self.url(content, e_context)
-                return
-    
-    def get_short_url(self, long_url):
+                return                
+        # 根据配置的服务进行不同的处理
+        if self.sum_service == "bibigpt":
+            self.handle_bibigpt(e_context)
+        elif self.sum_service == "openai":
+            self.handle_openai(e_context)
+        elif self.sum_service == "opensum":
+            self.handle_opensum(e_context)
+    def short_url(self, long_url):
         url = "https://s.fatwang2.com"
         payload = {
             "url": long_url
@@ -107,66 +103,24 @@ class sum4all(Plugin):
                 if short_key:
                     # 拼接成完整的短链接
                     return f"https://s.fatwang2.com{short_key}"
-        return None
-
-    def url(self, url: str, e_context: EventContext):    
-            headers = {
-                'Content-Type': 'application/json',
-            }
-            payload_params = {
-                "url": url,
-                "includeDetail": False,
-                "promptConfig": {
-                    "outputLanguage": self.outputLanguage
-                }
-            }
-    
-            payload = json.dumps(payload_params)           
-            try:
-                api_url = f"https://bibigpt.co/api/open/{self.bibigpt_key}"
-                response = requests.request("POST",api_url, headers=headers, data=payload)
-                response.raise_for_status()
-                data = json.loads(response.text)
-                summary_original = data.get('summary', 'Summary not available')
-                html_url = data.get('htmlUrl', 'HTML URL not available')
-                # 获取短链接
-                short_url = self.get_short_url(html_url) 
-                
-                # 如果获取短链接失败，使用 html_url
-                if short_url is None:
-                    short_url = html_url if html_url != 'HTML URL not available' else 'URL not available'
-                
-                # 移除 "##摘要"、"## 亮点" 和 "-"
-                summary = summary_original.split("详细版（支持对话追问）")[0].replace("## 摘要\n", "📌一句话总结：").replace("## 亮点\n", "").replace("- ", "")
-            except requests.exceptions.RequestException as e:
-                summary = f"An error occurred: {e}"
-
-            reply = Reply()
-            reply.type = ReplyType.TEXT
-            reply.content = f"{summary}详细链接：{short_url}"
-
-            e_context["reply"] = reply
-            e_context.action = EventAction.BREAK_PASS
+        return None 
     def handle_openai(self, e_context):
         content = e_context["context"].content
         meta = None      
-        # Check if the content is a URL
-        if re.match('https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+', content):
-            
-            headers = {
-                'Content-Type': 'application/json',
-                'WebPilot-Friend-UID': 'fatwang2',
-            }
-            payload = json.dumps({"link": content})
-            try:
-                api_url1 = "https://gpts.webpilot.ai/api/visit-web"
-                response1 = requests.request("POST",api_url1, headers=headers, data=payload)
-                response1.raise_for_status()
-                data = json.loads(response1.text)
-                meta= data.get('content','content not available')  # 获取data字段                
+        headers = {
+            'Content-Type': 'application/json',
+            'WebPilot-Friend-UID': 'fatwang2'
+        }
+        payload = json.dumps({"link": content})
+        try:
+            api_url = "https://gpts.webpilot.ai/api/visit-web"
+            response = requests.request("POST",api_url, headers=headers, data=payload)
+            response.raise_for_status()
+            data = json.loads(response.text)
+            meta= data.get('content','content not available')  # 获取data字段                
 
-            except requests.exceptions.RequestException as e:
-                meta = f"An error occurred: {e}"          
+        except requests.exceptions.RequestException as e:
+            meta = f"An error occurred: {e}"          
 
         # 如果meta获取成功，发送请求到OpenAI
         if meta:
@@ -206,33 +160,79 @@ class sum4all(Plugin):
             reply.content = f"{content}"            
             e_context["reply"] = reply
             e_context.action = EventAction.BREAK_PASS
+    def handle_bibigpt(self, e_context):    
+        content = e_context["context"].content
+        headers = {
+            'Content-Type': 'application/json'
+        }
+        payload_params = {
+            "url": content,
+            "includeDetail": False,
+            "promptConfig": {
+                "outputLanguage": self.outputLanguage
+            }
+        }
+
+        payload = json.dumps(payload_params)           
+        try:
+            api_url = f"https://bibigpt.co/api/open/{self.bibigpt_key}"
+            response = requests.request("POST",api_url, headers=headers, data=payload)
+            response.raise_for_status()
+            data = json.loads(response.text)
+            summary_original = data.get('summary', 'Summary not available')
+            html_url = data.get('htmlUrl', 'HTML URL not available')
+            # 获取短链接
+            short_url = self.short_url(html_url) 
+            
+            # 如果获取短链接失败，使用 html_url
+            if short_url is None:
+                short_url = html_url if html_url != 'HTML URL not available' else 'URL not available'
+            
+            # 移除 "##摘要"、"## 亮点" 和 "-"
+            summary = summary_original.split("详细版（支持对话追问）")[0].replace("## 摘要\n", "📌总结：").replace("## 亮点\n", "").replace("- ", "")
+        except requests.exceptions.RequestException as e:
+            summary = f"An error occurred: {e}"
+
+        reply = Reply()
+        reply.type = ReplyType.TEXT
+        reply.content = f"{summary}详细链接：{short_url}"
+
+        e_context["reply"] = reply
+        e_context.action = EventAction.BREAK_PASS
+
 
     def handle_opensum(self, e_context):
         content = e_context["context"].content
-        
-        # Check if the content is a URL
-        if re.match('https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+', content):
-            
-            headers = {
-                'Content-Type': 'application/json',
-                'Authorization': f'Bearer {self.opensum_key}', 
-            }
-            payload = json.dumps({"link": content})
-            try:
-                api_url1 = "https://read.thinkwx.com/api/v1/article/summary"
-                response1 = requests.request("POST",api_url1, headers=headers, data=payload)
-                response1.raise_for_status()
-                data = json.loads(response1.text)
-                summary_data = data.get('data', {})  # 获取data字段                
-                summary = summary_data.get('summary', 'Summary not available')
-            except requests.exceptions.RequestException as e:
-                summary = f"An error occurred: {e}"
-            reply = Reply()
-            reply.type = ReplyType.TEXT
-            reply.content = f"{summary}"
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {self.opensum_key}'
+        }
+        payload = json.dumps({"link": content})
+        try:
+            api_url = "https://read.thinkwx.com/api/v1/article/summary"
+            response = requests.request("POST",api_url, headers=headers, data=payload)
+            response.raise_for_status()
+            data = json.loads(response.text)
+            summary_data = data.get('data', {})  # 获取data字段                
+            summary_original = summary_data.get('summary', 'Summary not available')
+            # 使用正则表达式提取URL
+            url_pattern = r'https:\/\/[^\s]*'
+            match = re.search(url_pattern, summary_original)
+            html_url = match.group(0) if match else 'HTML URL not available'            
+            # 获取短链接
+            short_url = self.short_url(html_url) if match else html_url
+            summary = re.sub(url_pattern, '', summary_original).strip()
 
-            e_context["reply"] = reply
-            e_context.action = EventAction.BREAK_PASS    
+        except requests.exceptions.RequestException as e:
+            summary = f"An error occurred: {e}"
+            short_url = 'URL not available'
+        
+        reply = Reply()
+        reply.type = ReplyType.TEXT
+        reply.content = f"{summary}详细链接：{short_url}"
+
+        e_context["reply"] = reply
+        e_context.action = EventAction.BREAK_PASS    
 
     def get_help_text(self, **kwargs):
         help_text = "输入url，直接为你总结，包括视频、文章等\n"

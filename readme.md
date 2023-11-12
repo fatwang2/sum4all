@@ -12,7 +12,7 @@
 - V0.0.1，20230910，发布视频、文章总结插件
 
 ## 简介
-本项目为微信插件，需配合[chatgpt-on-wechat](https://github.com/zhayujie/chatgpt-on-wechat)项目使用，可以对文章、视频、播客内容做总结，覆盖b站、抖音、快手、小红书、微信等各个平台！具体效果如下
+本项目为微信插件，需配合[chatgpt-on-wechat](https://github.com/zhayujie/chatgpt-on-wechat)项目使用，可以对文章、视频、播客内容做总结，覆盖b站、抖音、快手、小红书、微信等各个平台！已接入多加内容总结服务，支持自定义prompt，可根据自己的需求自行选择，具体效果如下
 ![链接卡片](picture/image-6.png)
 ![小红书](picture/image.png)
 ![抖音](picture/%E6%8A%96%E9%9F%B3.png)
@@ -27,11 +27,13 @@
 ![Alt text](picture/image-4.png)
 
 ## 申请服务（三选一即可，推荐OpenAI）
-OpenAI（大部分文章）：有OpenAI API权限即可
+- OpenAI（支持绝大部分网页文章）：有OpenAI API权限即可
+![Alt text](picture/openai.png)
 
-OpenSum（部分文章）：通过链接注册 [注册地址](https://open.chatsum.ai/#/guide/apply?id=%e7%94%b3%e8%af%b7-api_key)，获取总结key，19元30万字
+- OpenSum（支持微信、头条、即刻等主流平台网页文章）：通过链接注册 [注册地址](https://open.chatsum.ai/#/guide/apply?id=%e7%94%b3%e8%af%b7-api_key)，获取总结key，19元30万字
+![Alt text](picture/opensum.png)
 
-BibiGPT（文章、视频、音频）：通过链接注册 [注册地址](https://bibigpt.co/r/tfcGVE)，获取总结key，注册免费享有60min时长，请注意，只有 `https://bibigpt.co/api/open/` 后面的部分是key
+- BibiGPT（文章、视频、音频）：通过链接注册 [注册地址](https://bibigpt.co/r/tfcGVE)，获取总结key，注册免费享有60min时长，请注意，只有 `https://bibigpt.co/api/open/` 后面的部分是key
 
 ![Alt text](picture/image-3.png)
 ## 配置
