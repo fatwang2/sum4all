@@ -195,8 +195,8 @@ class sum4all(Plugin):
                         {"role": "user", "content": meta}
                     ]
                 }
-                api_url = "https://hy2.fatwang2.com/v1/chat/completions"
-                response = requests.post(api_url, headers=headers, data=json.dumps(data))
+                api_url_2 = "https://hy2.fatwang2.com/v1/chat/completions"
+                response = requests.post(api_url_2, headers=headers, data=json.dumps(data))
                 response.raise_for_status()
 
                 # 处理响应数据
@@ -213,7 +213,7 @@ class sum4all(Plugin):
                     print("No choices available in the response")
             except requests.exceptions.RequestException as e:
                 # 处理可能出现的错误
-                logger.error(f"Error calling OpenAI API: {e}")
+                logger.error(f"Error calling sum4all api: {e}")
             reply = Reply()
             reply.type = ReplyType.TEXT
             reply.content = f"{content}"            
