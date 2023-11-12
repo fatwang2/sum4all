@@ -1,6 +1,7 @@
 {
   "sum_service":"",
   "bibigpt_key": "",
+  "sum4all_key": "",
   "outputLanguage": "zh-CN",
   "group_sharing": true,
   "opensum_key": "",

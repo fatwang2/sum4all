@@ -13,7 +13,7 @@ from common.log import logger
     desire_priority=2,
     hidden=False,
     desc="A plugin for summarizing videos and articels",
-    version="0.1.5",
+    version="0.1.6",
     author="fatwang2",
 )
 class sum4all(Plugin):
@@ -34,6 +34,7 @@ class sum4all(Plugin):
             self.model = conf["model"]
             self.open_ai_api_base = conf["open_ai_api_base"]
             self.prompt = conf["prompt"]
+            self.sum4all_key = conf["sum4all_key"]
             # 设置事件处理函数
             self.handlers[Event.ON_HANDLE_CONTEXT] = self.on_handle_context
             # 初始化成功日志
@@ -91,7 +92,8 @@ class sum4all(Plugin):
             self.handle_openai(content, e_context)
         elif self.sum_service == "opensum":
             self.handle_opensum(content, e_context)
-
+        elif self.sum_service == "sum4all":
+            self.handle_sum4all(content, e_context)
     def short_url(self, long_url):
         url = "https://s.fatwang2.com"
         payload = {
@@ -141,6 +143,60 @@ class sum4all(Plugin):
                 }
             
                 response = requests.post(f"{self.open_ai_api_base}/chat/completions", headers=headers, data=json.dumps(data))
+                response.raise_for_status()
+
+                # 处理响应数据
+                response_data = response.json()
+                # 这里可以根据你的需要处理响应数据
+                # 解析 JSON 并获取 content
+                if "choices" in response_data and len(response_data["choices"]) > 0:
+                    first_choice = response_data["choices"][0]
+                    if "message" in first_choice and "content" in first_choice["message"]:
+                        content = first_choice["message"]["content"]
+                    else:
+                        print("Content not found in the response")
+                else:
+                    print("No choices available in the response")
+            except requests.exceptions.RequestException as e:
+                # 处理可能出现的错误
+                logger.error(f"Error calling OpenAI API: {e}")
+            reply = Reply()
+            reply.type = ReplyType.TEXT
+            reply.content = f"{content}"            
+            e_context["reply"] = reply
+            e_context.action = EventAction.BREAK_PASS
+    def handle_sum4all(self, content, e_context):
+        meta = None      
+        headers = {
+            'Content-Type': 'application/json',
+            'WebPilot-Friend-UID': 'fatwang2'
+        }
+        payload = json.dumps({"link": content})
+        try:
+            api_url = "https://gpts.webpilot.ai/api/visit-web"
+            response = requests.request("POST",api_url, headers=headers, data=payload)
+            response.raise_for_status()
+            data = json.loads(response.text)
+            meta= data.get('content','content not available')  # 获取data字段                
+
+        except requests.exceptions.RequestException as e:
+            meta = f"An error occurred: {e}"          
+
+        if meta:
+            try:
+                headers = {
+                    'Content-Type': 'application/json',
+                    'Authorization': f'Bearer {self.sum4all_key}'  # 使用你的OpenAI API密钥
+                }
+                data = {
+                    "model": sum4all, 
+                    "messages": [
+                        {"role": "system", "content": self.prompt},
+                        {"role": "user", "content": meta}
+                    ]
+                }
+                api_url = "https://hy2.fatwang2.com/v1/chat/completions"
+                response = requests.post(api_url, headers=headers, data=json.dumps(data))
                 response.raise_for_status()
 
                 # 处理响应数据

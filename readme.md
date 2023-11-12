@@ -1,4 +1,5 @@
 ## 更新日志
+- V0.1.6，20231112，新增Sum4all总结服务，自己套了个国产大模型，注册免费送10万token，邀请好友注册再各得5万
 - V0.1.5，20231112，整合三种服务的代码，全部支持分享链接卡片
 - V0.1.3，20231112，新增支持OpenAI、OpenSum两种总结服务，通过配置文件可切换；支持Docker部署
 - V0.1.0，20231025，去除重复短链接
@@ -27,9 +28,11 @@
 
 ![Alt text](picture/image-4.png)
 
-## 申请服务（三选一即可，推荐OpenAI）
+## 申请服务（四选一即可，推荐OpenAI，不舍得的可以试试sum4all）
 - OpenAI（支持绝大部分网页文章）：有OpenAI API权限即可
 ![Alt text](picture/openai.png)
+
+- Sum4all（同上）：跟上面的区别就是我换了个国内的大模型，注册免费送10万token，邀请好友注册再各得5万，后面怎么定价还没想好，1块钱20万？先这么来，点击链接可注册， [注册地址](https://hy2.fatwang2.com/register?aff=T6rP)，获取总结key
 
 - OpenSum（支持微信、头条、即刻等主流平台网页文章）：通过链接注册 [注册地址](https://open.chatsum.ai/#/guide/apply?id=%e7%94%b3%e8%af%b7-api_key)，获取总结key，19元30万字
 ![Alt text](picture/opensum.png)
@@ -43,8 +46,9 @@
 
 各参数含义如下：
 ```
-"sum_service":"", #内容总结服务，openai、bibigpt、opensum
+"sum_service":"", #内容总结服务，openai、sum4all、bibigpt、opensum
 "group_sharing": true, #是否支持群聊内的链接卡片
+"sum4all_key":"", #如选sum4all，则必填
 "opensum_key": "", #如选opensum，则必填
 "open_ai_api_key": "", #如选openai，则必填
 "model": "gpt-3.5-turbo-1106", #openai模型
@@ -73,6 +77,7 @@ bibigpt输出语言支持列表：
 ## 后续计划
 - 支持企业微信的链接卡片
 - 支持输出总结图片
-- 支持文章对话
-- 支持文件总结与对话
-- 支持视频号
+- 支持文件总结
+- 支持文章、文件对话
+- 支持视频号总结
+- 支持通过管理员指令切换内容总结服务、配置参数等
