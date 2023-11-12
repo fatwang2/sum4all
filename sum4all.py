@@ -13,7 +13,7 @@ from common.log import logger
     desire_priority=2,
     hidden=False,
     desc="A plugin for summarizing videos and articels",
-    version="0.1.4",
+    version="0.1.5",
     author="fatwang2",
 )
 class sum4all(Plugin):
@@ -44,12 +44,14 @@ class sum4all(Plugin):
             logger.warn(f"sum4all init failed: {e}")
     def on_handle_context(self, e_context: EventContext):
         context = e_context["context"]
-        if context.type not in [ContextType.TEXT, ContextType.SHARING]:  # filter content no need solve
+        if context.type not in [ContextType.TEXT, ContextType.SHARING]:
             return
         content = context.content
         isgroup = e_context["context"].get("isgroup", False)
+
         url_match = re.match('https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+', content)
         unsupported_urls = re.search(r'.*finder\.video\.qq\.com.*|.*support\.weixin\.qq\.com/update.*|.*support\.weixin\.qq\.com/security.*|.*mp\.weixin\.qq\.com/mp/waerrpage.*', content)
+
         if context.type == ContextType.SHARING:  #匹配卡片分享
             if unsupported_urls:  #匹配不支持总结的卡片
                 if isgroup:  ##群聊中忽略
@@ -63,13 +65,13 @@ class sum4all(Plugin):
                 if isgroup:  #处理群聊总结
                     if self.group_sharing:  #group_sharing = True进行总结，False则忽略。
                         logger.info("[sum4all] Summary URL : %s", content)
-                        self.url(content, e_context)
+                        self.call_service(content, e_context)
                         return
                     else:
                         return
                 else:  #处理私聊总结
                     logger.info("[sum4all] Summary URL : %s", content)
-                    self.url(content, e_context)
+                    self.call_service(content, e_context)
                     return
         elif url_match: #匹配URL链接
             if unsupported_urls:  #匹配不支持总结的网址
@@ -79,15 +81,17 @@ class sum4all(Plugin):
                 e_context.action = EventAction.BREAK_PASS
             else:
                 logger.info("[sum4all] Summary URL : %s", content)
-                self.url(content, e_context)
-                return                
+                self.call_service(content, e_context)
+                return
+    def call_service(self, content, e_context):
         # 根据配置的服务进行不同的处理
         if self.sum_service == "bibigpt":
-            self.handle_bibigpt(e_context)
+            self.handle_bibigpt(content, e_context)
         elif self.sum_service == "openai":
-            self.handle_openai(e_context)
+            self.handle_openai(content, e_context)
         elif self.sum_service == "opensum":
-            self.handle_opensum(e_context)
+            self.handle_opensum(content, e_context)
+
     def short_url(self, long_url):
         url = "https://s.fatwang2.com"
         payload = {
@@ -104,8 +108,7 @@ class sum4all(Plugin):
                     # 拼接成完整的短链接
                     return f"https://s.fatwang2.com{short_key}"
         return None 
-    def handle_openai(self, e_context):
-        content = e_context["context"].content
+    def handle_openai(self, content, e_context):
         meta = None      
         headers = {
             'Content-Type': 'application/json',
@@ -160,8 +163,7 @@ class sum4all(Plugin):
             reply.content = f"{content}"            
             e_context["reply"] = reply
             e_context.action = EventAction.BREAK_PASS
-    def handle_bibigpt(self, e_context):    
-        content = e_context["context"].content
+    def handle_bibigpt(self, content, e_context):    
         headers = {
             'Content-Type': 'application/json'
         }
@@ -201,8 +203,7 @@ class sum4all(Plugin):
         e_context.action = EventAction.BREAK_PASS
 
 
-    def handle_opensum(self, e_context):
-        content = e_context["context"].content
+    def handle_opensum(self, content, e_context):
         headers = {
             'Content-Type': 'application/json',
             'Authorization': f'Bearer {self.opensum_key}'
