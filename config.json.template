@@ -1,5 +1,6 @@
 {
   "sum_service":"",
+  "search_sum":"",
   "bibigpt_key": "",
   "sum4all_key": "",
   "outputLanguage": "zh-CN",

@@ -13,7 +13,7 @@ from common.log import logger
     desire_priority=2,
     hidden=False,
     desc="A plugin for summarizing videos and articels",
-    version="0.1.6",
+    version="0.2.0",
     author="fatwang2",
 )
 class sum4all(Plugin):
@@ -35,6 +35,7 @@ class sum4all(Plugin):
             self.open_ai_api_base = conf["open_ai_api_base"]
             self.prompt = conf["prompt"]
             self.sum4all_key = conf["sum4all_key"]
+            self.search_sum = conf["search_sum"]
             # 设置事件处理函数
             self.handlers[Event.ON_HANDLE_CONTEXT] = self.on_handle_context
             # 初始化成功日志
@@ -53,6 +54,11 @@ class sum4all(Plugin):
         url_match = re.match('https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+', content)
         unsupported_urls = re.search(r'.*finder\.video\.qq\.com.*|.*support\.weixin\.qq\.com/update.*|.*support\.weixin\.qq\.com/security.*|.*mp\.weixin\.qq\.com/mp/waerrpage.*', content)
 
+            # 检查输入是否以"搜" 开头
+        if content.startswith("搜") and self.search_sum:
+            # Call new function to handle search operation
+            self.handle_search(content, e_context)
+            return
         if context.type == ContextType.SHARING:  #匹配卡片分享
             if unsupported_urls:  #匹配不支持总结的卡片
                 if isgroup:  ##群聊中忽略
@@ -291,7 +297,61 @@ class sum4all(Plugin):
 
         e_context["reply"] = reply
         e_context.action = EventAction.BREAK_PASS    
+    def handle_search(self, content, e_context):
+        meta = None      
+        headers = {
+            'Content-Type': 'application/json',
+            'WebPilot-Friend-UID': 'fatwang2'
+        }
+        payload = json.dumps({"ur": content})
+        try:
+            api_url = "https://gpts.webpilot.ai/api/visit-web"
+            response = requests.request("POST",api_url, headers=headers, data=payload)
+            response.raise_for_status()
+            data = json.loads(response.text)
+            meta= data.get('content','content not available')  # 获取data字段                
 
+        except requests.exceptions.RequestException as e:
+            meta = f"An error occurred: {e}"          
+
+        if meta:
+            try:
+                headers = {
+                    'Content-Type': 'application/json',
+                    'Authorization': f'Bearer {self.sum4all_key}'  # 使用你的sum4all key
+                }
+                data = {
+                    "model": "sum4all", 
+                    "messages": [
+                        {"role": "system", "content": self.prompt},
+                        {"role": "user", "content": meta}
+                    ]
+                }
+                api_url_2 = "https://hy2.fatwang2.com/v1/chat/completions"
+                response = requests.post(api_url_2, headers=headers, data=json.dumps(data))
+                response.raise_for_status()
+
+                # 处理响应数据
+                response_data = response.json()
+                # 这里可以根据你的需要处理响应数据
+                # 解析 JSON 并获取 content
+                if "choices" in response_data and len(response_data["choices"]) > 0:
+                    first_choice = response_data["choices"][0]
+                    if "message" in first_choice and "content" in first_choice["message"]:
+                        content = first_choice["message"]["content"]
+                        content = content.replace("\\n", "\n")
+                    else:
+                        print("Content not found in the response")
+                else:
+                    print("No choices available in the response")
+            except requests.exceptions.RequestException as e:
+                # 处理可能出现的错误
+                logger.error(f"Error calling sum4all api: {e}")
+            reply = Reply()
+            reply.type = ReplyType.TEXT
+            reply.content = f"{content}"            
+            e_context["reply"] = reply
+            e_context.action = EventAction.BREAK_PASS
     def get_help_text(self, **kwargs):
         help_text = "输入url，直接为你总结，包括视频、文章等\n"
         return help_text
