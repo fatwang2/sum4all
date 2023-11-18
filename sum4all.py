@@ -13,7 +13,7 @@ from common.log import logger
     desire_priority=2,
     hidden=False,
     desc="A plugin for summarizing videos and articels",
-    version="0.2.0",
+    version="0.2.1",
     author="fatwang2",
 )
 class sum4all(Plugin):
@@ -172,60 +172,30 @@ class sum4all(Plugin):
             e_context["reply"] = reply
             e_context.action = EventAction.BREAK_PASS
     def handle_sum4all(self, content, e_context):
-        meta = None      
         headers = {
             'Content-Type': 'application/json',
-            'WebPilot-Friend-UID': 'fatwang2'
+            'Authorization': f'Bearer {self.sum4all_key}'
         }
-        payload = json.dumps({"link": content})
+        payload = json.dumps({
+            "link": content, 
+            "prompt": self.prompt
+        })
         try:
-            api_url = "https://gpts.webpilot.ai/api/visit-web"
-            response = requests.request("POST",api_url, headers=headers, data=payload)
+            api_url = "https://ai.sum4all.site"
+            response = requests.post(api_url, headers=headers, data=payload)
             response.raise_for_status()
-            data = json.loads(response.text)
-            meta= data.get('content','content not available')  # 获取data字段                
+            content = response.text  # 直接使用响应的文本内容
 
         except requests.exceptions.RequestException as e:
-            meta = f"An error occurred: {e}"          
+            # 处理可能出现的错误
+            logger.error(f"Error calling new combined api: {e}")
+            content = f"An error occurred: {e}"
 
-        if meta:
-            try:
-                headers = {
-                    'Content-Type': 'application/json',
-                    'Authorization': f'Bearer {self.sum4all_key}'  # 使用你的sum4all key
-                }
-                data = {
-                    "model": "sum4all", 
-                    "messages": [
-                        {"role": "system", "content": self.prompt},
-                        {"role": "user", "content": meta}
-                    ]
-                }
-                api_url_2 = "https://hy2.fatwang2.com/v1/chat/completions"
-                response = requests.post(api_url_2, headers=headers, data=json.dumps(data))
-                response.raise_for_status()
-
-                # 处理响应数据
-                response_data = response.json()
-                # 这里可以根据你的需要处理响应数据
-                # 解析 JSON 并获取 content
-                if "choices" in response_data and len(response_data["choices"]) > 0:
-                    first_choice = response_data["choices"][0]
-                    if "message" in first_choice and "content" in first_choice["message"]:
-                        content = first_choice["message"]["content"]
-                        content = content.replace("\\n", "\n")
-                    else:
-                        print("Content not found in the response")
-                else:
-                    print("No choices available in the response")
-            except requests.exceptions.RequestException as e:
-                # 处理可能出现的错误
-                logger.error(f"Error calling sum4all api: {e}")
-            reply = Reply()
-            reply.type = ReplyType.TEXT
-            reply.content = f"{content}"            
-            e_context["reply"] = reply
-            e_context.action = EventAction.BREAK_PASS
+        reply = Reply()
+        reply.type = ReplyType.TEXT
+        reply.content = content            
+        e_context["reply"] = reply
+        e_context.action = EventAction.BREAK_PASS
     def handle_bibigpt(self, content, e_context):    
         headers = {
             'Content-Type': 'application/json'
