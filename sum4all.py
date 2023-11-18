@@ -184,7 +184,11 @@ class sum4all(Plugin):
             api_url = "https://ai.sum4all.site"
             response = requests.post(api_url, headers=headers, data=payload)
             response.raise_for_status()
-            content = response.text  # 直接使用响应的文本内容
+            response_data = response.json()  # 解析响应的 JSON 数据
+            if response_data.get("success"):
+                content = response_data["content"].replace("\\n", "\n")  # 替换 \\n 为 \n
+            else:
+                content = "Content not found or error in response"
 
         except requests.exceptions.RequestException as e:
             # 处理可能出现的错误
