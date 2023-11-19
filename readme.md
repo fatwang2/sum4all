@@ -37,12 +37,14 @@
 - Sum4all（同上）：跟上面的区别就是我换了个国内的大模型，注册免费送10万token，邀请好友注册再各得5万，后面怎么定价还没想好，1块钱20万？先这么来，点击链接可注册， [注册地址](https://hy2.fatwang2.com/register?aff=T6rP)，获取总结key
 ![Alt text](picture/sum4all.png)
 
+- BibiGPT（文章、视频、音频）：通过链接注册 [注册地址](https://bibigpt.co/r/kmNClU)，获取总结key，注册免费享有60min时长，请注意，只有 `https://bibigpt.co/api/open/` 后面的部分是key
+
+![Alt text](picture/image-3.png)
+
 - OpenSum（支持微信、头条、即刻等主流平台网页文章）：通过链接注册 [注册地址](https://open.chatsum.ai/#/guide/apply?id=%e7%94%b3%e8%af%b7-api_key)，获取总结key，19元30万字
 ![Alt text](picture/opensum.png)
 
-- BibiGPT（文章、视频、音频）：通过链接注册 [注册地址](https://bibigpt.co/r/tfcGVE)，获取总结key，注册免费享有60min时长，请注意，只有 `https://bibigpt.co/api/open/` 后面的部分是key
 
-![Alt text](picture/image-3.png)
 ## 配置
 - 服务器部署：复制插件目录的`config.json.template`文件,重命名为`config.json`，配置参数即可
 - docker部署：参考项目docker部署的插件使用，`config.json`内增加sum4all插件的配置参数，操作见 [docker插件配置](https://github.com/zhayujie/chatgpt-on-wechat#3-%E6%8F%92%E4%BB%B6%E4%BD%BF%E7%94%A8)
