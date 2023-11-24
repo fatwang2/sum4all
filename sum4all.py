@@ -180,6 +180,8 @@ class sum4all(Plugin):
             "link": content,
             "prompt": self.prompt
         })
+        additional_content = ""  # 在 try 块之前初始化 additional_content
+
         try:
             api_url = "https://ai.sum4all.site"
             response = requests.post(api_url, headers=headers, data=payload)
@@ -302,12 +304,12 @@ class sum4all(Plugin):
                 # 解析 meta 数据
                 meta = response_data.get("meta", {})  # 如果没有 meta 数据，则默认为空字典
                 title = meta.get("og:title", "")  # 获取 og:title，如果没有则默认为空字符串
-                url = meta.get("og:url", "")  # 获取 og:url，如果没有则默认为空字符串
+                og_url = meta.get("og:url", "")  # 获取 og:url，如果没有则默认为空字符串
                 # 只有当 title 和 url 非空时，才加入到回复中
                 if title:
                     reply_content += f"\n\n参考文章：{title}"
-                if url:
-                    short_url = self.short_url(url)  # 获取短链接
+                if og_url:
+                    short_url = self.short_url(og_url)  # 获取短链接
                     reply_content += f"\n\n参考链接：{short_url}"                
 
             else:
