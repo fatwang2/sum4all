@@ -187,9 +187,15 @@ class sum4all(Plugin):
             response_data = response.json()  # 解析响应的 JSON 数据
             if response_data.get("success"):
                 content = response_data["content"].replace("\\n", "\n")  # 替换 \\n 为 \n
+
                 # 新增加的部分，用于解析 meta 数据
                 meta = response_data.get("meta", {})  # 如果没有 meta 数据，则默认为空字典
                 title = meta.get("og:title", "")  # 获取 og:title，如果没有则默认为空字符串
+                # 只有当 title 非空时，才加入到回复中
+                if title:
+                    additional_content += f"{title}\n\n"
+                reply_content = additional_content + content  # 将内容加入回复
+                
             else:
                 content = "Content not found or error in response"
 
@@ -200,7 +206,7 @@ class sum4all(Plugin):
 
         reply = Reply()
         reply.type = ReplyType.TEXT
-        reply.content = f"标题：{title}\n\n{content}"            
+        reply.content = reply_content            
         e_context["reply"] = reply
         e_context.action = EventAction.BREAK_PASS
     def handle_bibigpt(self, content, e_context):    
@@ -291,12 +297,18 @@ class sum4all(Plugin):
             response_data = response.json()  # 解析响应的 JSON 数据
             if response_data.get("success"):
                 content = response_data["content"].replace("\\n", "\n")  # 替换 \\n 为 \n
-                # 新增加的部分，用于解析 meta 数据
+                reply_content = content  # 将内容加入回复
+
+                # 解析 meta 数据
                 meta = response_data.get("meta", {})  # 如果没有 meta 数据，则默认为空字典
                 title = meta.get("og:title", "")  # 获取 og:title，如果没有则默认为空字符串
-                url = meta.get("og:title", "")  # 获取 og:title，如果没有则默认为空字符串
-                # 获取短链接
-                short_url = self.short_url(url)
+                url = meta.get("og:url", "")  # 获取 og:url，如果没有则默认为空字符串
+                # 只有当 title 和 url 非空时，才加入到回复中
+                if title:
+                    reply_content += f"\n\n参考文章：{title}"
+                if url:
+                    short_url = self.short_url(url)  # 获取短链接
+                    reply_content += f"\n\n参考链接：{short_url}"                
 
             else:
                 content = "Content not found or error in response"
@@ -308,7 +320,7 @@ class sum4all(Plugin):
 
         reply = Reply()
         reply.type = ReplyType.TEXT
-        reply.content = f"{content}\n\n参考文章：{title}\n\n参考链接：{short_url}"            
+        reply.content = reply_content            
         e_context["reply"] = reply
         e_context.action = EventAction.BREAK_PASS
     def get_help_text(self, **kwargs):
