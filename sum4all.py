@@ -305,6 +305,9 @@ class sum4all(Plugin):
                 meta = response_data.get("meta", {})  # 如果没有 meta 数据，则默认为空字典
                 title = meta.get("og:title", "")  # 获取 og:title，如果没有则默认为空字符串
                 og_url = meta.get("og:url", "")  # 获取 og:url，如果没有则默认为空字符串
+                # 打印 title 和 og_url 以调试
+                print("Title:", title)
+                print("Original URL:", og_url)                
                 # 只有当 title 和 url 非空时，才加入到回复中
                 if title:
                     reply_content += f"\n\n参考文章：{title}"
