@@ -13,7 +13,7 @@ from common.log import logger
     desire_priority=2,
     hidden=False,
     desc="A plugin for summarizing all things",
-    version="0.2.2",
+    version="0.2.3",
     author="fatwang2",
 )
 class sum4all(Plugin):
@@ -101,7 +101,7 @@ class sum4all(Plugin):
         elif self.sum_service == "sum4all":
             self.handle_sum4all(content, e_context)
     def short_url(self, long_url):
-        url = "https://s.fatwang2.com"
+        url = "https://short.fatwang2.com"
         payload = {
             "url": long_url
         }        
@@ -109,13 +109,12 @@ class sum4all(Plugin):
         response = requests.request("POST", url, json=payload, headers=headers)
         if response.status_code == 200:
             res_data = response.json()
-            if res_data.get('status') == 200:
-                short_key = res_data.get('key', None)  # 获取 'key' 字段的值
-        
-                if short_key:
-                    # 拼接成完整的短链接
-                    return f"https://s.fatwang2.com{short_key}"
-        return None 
+            # 直接从返回的 JSON 中获取短链接
+            short_url = res_data.get('shorturl', None)  
+            
+            if short_url:
+                return short_url
+        return None
     def handle_openai(self, content, e_context):
         meta = None      
         headers = {
