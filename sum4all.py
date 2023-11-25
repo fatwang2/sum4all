@@ -26,16 +26,16 @@ class sum4all(Plugin):
                 raise Exception("config.json not found")
             # 从配置中提取所需的设置
             self.sum_service = conf["sum_service"]
-            self.bibigpt_key = conf("bibigpt_key","")
-            self.outputLanguage = conf("outputLanguage","zh-CN")
-            self.group_sharing = conf("group_sharing","true")
-            self.opensum_key = conf("opensum_key","")
-            self.open_ai_api_key = conf("open_ai_api_key","")
-            self.model = conf("model","gpt-3.5-turbo")
-            self.open_ai_api_base = conf("open_ai_api_base","https://api.openai.com/v1")
-            self.prompt = conf("prompt","你是一个新闻专家，我会给你发一些网页内容，请你用简单明了的语言做总结。格式如下：📌总结\n一句话讲清楚整篇文章的核心观点，控制在30字左右。\n\n💡要点\n用数字序号列出来3-5个文章的核心内容，尽量使用emoji让你的表达更生动，请注意输出的内容不要有两个转义符")
-            self.sum4all_key = conf("sum4all_key","")
-            self.search_sum = conf("search_sum","")
+            self.bibigpt_key = conf.get("bibigpt_key","")
+            self.outputLanguage = conf.get("outputLanguage","zh-CN")
+            self.group_sharing = conf.get("group_sharing","true")
+            self.opensum_key = conf.get("opensum_key","")
+            self.open_ai_api_key = conf.get("open_ai_api_key","")
+            self.model = conf.get("model","gpt-3.5-turbo")
+            self.open_ai_api_base = conf.get("open_ai_api_base","https://api.openai.com/v1")
+            self.prompt = conf.get("prompt","你是一个新闻专家，我会给你发一些网页内容，请你用简单明了的语言做总结。格式如下：📌总结\n一句话讲清楚整篇文章的核心观点，控制在30字左右。\n\n💡要点\n用数字序号列出来3-5个文章的核心内容，尽量使用emoji让你的表达更生动，请注意输出的内容不要有两个转义符")
+            self.sum4all_key = conf.get("sum4all_key","")
+            self.search_sum = conf.get("search_sum","")
             # 设置事件处理函数
             self.handlers[Event.ON_HANDLE_CONTEXT] = self.on_handle_context
             # 初始化成功日志
