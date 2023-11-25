@@ -270,7 +270,7 @@ class sum4all(Plugin):
             # 获取短链接
             short_url = self.short_url(html_url) if match else html_url
             # 用于移除摘要中的URL及其后的所有内容
-            url_pattern_remove = r'https:\/\/[^\s]+.*'
+            url_pattern_remove = r'https:\/\/[^\s]+[\s\S]*'
             summary = re.sub(url_pattern_remove, '', summary_original).strip()        
 
         except requests.exceptions.RequestException as e:
