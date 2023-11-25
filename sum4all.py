@@ -264,12 +264,14 @@ class sum4all(Plugin):
             summary_data = data.get('data', {})  # 获取data字段                
             summary_original = summary_data.get('summary', 'Summary not available')
             # 使用正则表达式提取URL
-            url_pattern = r'https:\/\/[^\s]*'
+            url_pattern = r'https:\/\/[^\s]+'
             match = re.search(url_pattern, summary_original)
             html_url = match.group(0) if match else 'HTML URL not available'            
             # 获取短链接
             short_url = self.short_url(html_url) if match else html_url
-            summary = re.sub(url_pattern, '', summary_original).strip()
+            # 用于移除摘要中的URL及其后的所有内容
+            url_pattern_remove = r'https:\/\/[^\s]+.*'
+            summary = re.sub(url_pattern_remove, '', summary_original).strip()        
 
         except requests.exceptions.RequestException as e:
             summary = f"An error occurred: {e}"
