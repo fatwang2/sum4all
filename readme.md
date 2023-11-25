@@ -37,16 +37,16 @@
 OpenAI（支持绝大部分网页文章）：有OpenAI API权限即可
 ![Alt text](picture/openai.png)
 
-Sum4all（同上）：跟上面的区别就是我换了个国内的大模型，注册免费送10万token，邀请好友注册再各得5万，后面怎么定价还没想好，1块钱20万？先这么来，点击链接可注册，有充值需求的可以先提issue留言， [注册地址](https://hy2.fatwang2.com/register?aff=T6rP)，获取总结key。
+Sum4all（同上）：跟上面的区别就是我换了个国内的大模型，注册免费送10万token，邀请好友注册再各得5万，后面怎么定价还没想好，1块钱20万？先这么来，点击链接可注册，有充值需求的可以先提issue留言， [注册地址](https://sum4all.site/key)，获取总结key。
 
-另外，现在已推出Poe上的Sum4all机器人，支持文章与YouTube视频内容总结，推荐体验，[poe机器人](https://poe.com/Sum4all)
+另外，现在已推出Poe上的Sum4all机器人，支持文章与YouTube视频内容总结，推荐体验，[poe机器人](https://sum4all.site/poe)
 ![Alt text](picture/sum4all.png)
 
-BibiGPT（文章、视频、音频）：通过链接注册 [注册地址](https://bibigpt.co/r/kmNClU)，获取总结key，注册免费享有60min时长，请注意，只有 `https://bibigpt.co/api/open/` 后面的部分是key
+BibiGPT（文章、视频、音频）：通过链接注册 [注册地址](https://sum4all.site/bibigpt)，获取总结key，注册免费享有60min时长，请注意，只有 `https://bibigpt.co/api/open/` 后面的部分是key
 
 ![Alt text](picture/image-3.png)
 
-OpenSum（支持微信、头条、即刻等主流平台网页文章）：通过链接注册 [注册地址](https://open.chatsum.ai/#/guide/apply?id=%e7%94%b3%e8%af%b7-api_key)，获取总结key，19元30万字
+OpenSum（支持微信、头条、即刻等主流平台网页文章）：通过链接注册 [注册地址](https://sum4all.site/opensum)，获取总结key，19元30万字
 ![Alt text](picture/opensum.png)
 
 
