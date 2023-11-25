@@ -279,7 +279,7 @@ class sum4all(Plugin):
         
         reply = Reply()
         reply.type = ReplyType.TEXT
-        reply.content = f"{summary}详细链接：{short_url}"
+        reply.content = f"{summary}\n\n详细链接：{short_url}"
 
         e_context["reply"] = reply
         e_context.action = EventAction.BREAK_PASS    
