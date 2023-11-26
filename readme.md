@@ -1,5 +1,5 @@
 ## 用户交流群
-[telegram](https://t.me/+W8eKDSQH-jYwZDA9)
+[telegram](https://t.me/+w2Z8S0Y8H2IxZDI9)
 
 ## 更新日志
 - V0.2.4，20231125，新增各参数默认值，避免升级未修改配置文件带来的问题，修复OpenSum格式异常问题
