@@ -103,9 +103,9 @@ class sum4all(Plugin):
             self.handle_opensum(content, e_context)
         elif self.sum_service == "sum4all":
             self.handle_sum4all(content, e_context)
-        elif self.search_service == 'sum4all':
+        elif self.search_service == "sum4all":
             self.handle_search(content)
-        elif self.search_service == 'perplexity':
+        elif self.search_service == "perplexity":
             self.handle_perplexity(content)
     
     def short_url(self, long_url):
