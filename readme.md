@@ -1,7 +1,9 @@
-## 用户交流群
-[telegram](https://t.me/+w2Z8S0Y8H2IxZDI9)
+## 用户交流
+[telegram频道 ](https://t.me/+w2Z8S0Y8H2IxZDI9)
 
 ## 更新日志
+- V0.2.6，20231130，新增支持perplexityi搜索，需自行注册申请key
+- V0.2.5，20231130，新增搜索prompt，支持单独配置
 - V0.2.4，20231125，新增各参数默认值，避免升级未修改配置文件带来的问题，修复OpenSum格式异常问题
 - V0.2.3，20231125，更新短链接服务
 - V0.2.2，20231124，简化sum4all搜索代码，新增文章总结的标题，新增搜索总结的参考文章与链接
@@ -40,10 +42,13 @@
 OpenAI（支持绝大部分网页文章）：有OpenAI API权限即可
 ![Alt text](picture/openai.png)
 
-Sum4all（同上）：跟上面的区别就是我换了个国内的大模型，注册免费送10万token，邀请好友注册再各得5万，后面怎么定价还没想好，1块钱20万？先这么来，点击链接可注册，有充值需求的可以先提issue留言， [注册地址](https://sum4all.site/key)，获取总结key。
+Sum4all（同上）：跟上面的区别就是我换了个国内的大模型，注册免费送10万token，邀请好友注册再各得5万，后面怎么定价还没想好，点击链接可注册，[注册地址](https://sum4all.site/key)，获取总结key。交流请加入[telegram频道 ](https://t.me/+w2Z8S0Y8H2IxZDI9)
 
 另外，现在已推出Poe上的Sum4all机器人，支持文章与YouTube视频内容总结，推荐体验，[poe机器人](https://sum4all.site/poe)
 ![Alt text](picture/sum4all.png)
+
+Perplexity（搜索服务）：国外的搜索总结服务，很好用，需自行注册、自行付费，不便宜 [注册地址](https://sum4all.site/perplexity)
+![Alt text](picture/p.png)
 
 BibiGPT（文章、视频、音频）：通过链接注册 [注册地址](https://sum4all.site/bibigpt)，获取总结key，注册免费享有60min时长，请注意，只有 `https://bibigpt.co/api/open/` 后面的部分是key
 

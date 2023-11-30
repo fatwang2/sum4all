@@ -1,13 +1,16 @@
 {
   "sum_service":"",
   "search_sum": false,
+  "search_service":"",
   "bibigpt_key": "",
   "sum4all_key": "",
+  "perplexity_key":"",
   "outputLanguage": "zh-CN",
   "group_sharing": true,
   "opensum_key": "",
   "open_ai_api_key": "",
   "model": "gpt-3.5-turbo",
   "open_ai_api_base": "https://api.openai.com/v1",
-  "prompt": "你是一个新闻专家，我会给你发一些网页内容，请你用简单明了的语言做总结。格式如下：📌总结\n一句话讲清楚整篇文章的核心观点，控制在30字左右。\n\n💡要点\n用数字序号列出来3-5个文章的核心内容，尽量使用emoji让你的表达更生动，请注意输出的内容不要有两个转义符"
+  "prompt": "你是一个新闻专家，我会给你发一些网页内容，请你用简单明了的语言做总结。格式如下：📌总结\n一句话讲清楚整篇文章的核心观点，控制在30字左右。\n\n💡要点\n用数字序号列出来3-5个文章的核心内容，尽量使用emoji让你的表达更生动",
+  "search_prompt":"你是一个信息检索专家，请你用简单明了的语言，对你收到的内容做总结。尽量使用emoji让你的表达更生动"
 }

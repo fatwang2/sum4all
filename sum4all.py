@@ -13,7 +13,7 @@ from common.log import logger
     desire_priority=2,
     hidden=False,
     desc="A plugin for summarizing all things",
-    version="0.2.4",
+    version="0.2.6",
     author="fatwang2",
 )
 class sum4all(Plugin):
@@ -34,8 +34,11 @@ class sum4all(Plugin):
             self.model = conf.get("model","gpt-3.5-turbo")
             self.open_ai_api_base = conf.get("open_ai_api_base","https://api.openai.com/v1")
             self.prompt = conf.get("prompt","你是一个新闻专家，我会给你发一些网页内容，请你用简单明了的语言做总结。格式如下：📌总结\n一句话讲清楚整篇文章的核心观点，控制在30字左右。\n\n💡要点\n用数字序号列出来3-5个文章的核心内容，尽量使用emoji让你的表达更生动，请注意输出的内容不要有两个转义符")
+            self.search_prompt = conf.get("search_prompt","你是一个信息检索专家，请你用简单明了的语言，对你收到的内容做总结。尽量使用emoji让你的表达更生动")
             self.sum4all_key = conf.get("sum4all_key","")
             self.search_sum = conf.get("search_sum","")
+            self.perplexity_key = conf.get("perplexity_key","")
+            self.search_service = conf("search_service","")            
             # 设置事件处理函数
             self.handlers[Event.ON_HANDLE_CONTEXT] = self.on_handle_context
             # 初始化成功日志
@@ -57,7 +60,7 @@ class sum4all(Plugin):
             # 检查输入是否以"搜" 开头
         if content.startswith("搜") and self.search_sum:
             # Call new function to handle search operation
-            self.handle_search(content, e_context)
+            self.call_service(content, e_context)
             return
         if context.type == ContextType.SHARING:  #匹配卡片分享
             if unsupported_urls:  #匹配不支持总结的卡片
@@ -100,6 +103,11 @@ class sum4all(Plugin):
             self.handle_opensum(content, e_context)
         elif self.sum_service == "sum4all":
             self.handle_sum4all(content, e_context)
+        elif self.search_service == 'sum4all':
+            self.handle_search(content)
+        elif self.search_service == 'perplexity':
+            self.handle_perplexity(content)
+    
     def short_url(self, long_url):
         url = "https://short.fatwang2.com"
         payload = {
@@ -291,7 +299,7 @@ class sum4all(Plugin):
         }
         payload = json.dumps({
             "ur": content,
-            "prompt": self.prompt
+            "prompt": self.search_prompt
         })
         try:
             api_url = "https://ai.sum4all.site"
@@ -327,6 +335,40 @@ class sum4all(Plugin):
         reply = Reply()
         reply.type = ReplyType.TEXT
         reply.content = reply_content            
+        e_context["reply"] = reply
+        e_context.action = EventAction.BREAK_PASS
+    def handle_perplexity(self, content, e_context):
+        
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {self.perplexity_key}'
+        }
+        payload = json.dumps({
+            "ur": content,
+            "prompt": self.search_prompt
+        })
+        try:
+            api_url = "https://api.perplexity.ai/chat/completions"
+            response = requests.post(api_url, headers=headers, data=payload)
+            response.raise_for_status()
+            # 处理响应数据
+            response_data = response.json()
+            # 这里可以根据你的需要处理响应数据
+            # 解析 JSON 并获取 content
+            if "choices" in response_data and len(response_data["choices"]) > 0:
+                first_choice = response_data["choices"][0]
+                if "message" in first_choice and "content" in first_choice["message"]:
+                    content = first_choice["message"]["content"]
+                else:
+                    print("Content not found in the response")
+            else:
+                print("No choices available in the response")
+        except requests.exceptions.RequestException as e:
+            # 处理可能出现的错误
+            logger.error(f"Error calling perplexity: {e}")
+        reply = Reply()
+        reply.type = ReplyType.TEXT
+        reply.content = f"{content}"            
         e_context["reply"] = reply
         e_context.action = EventAction.BREAK_PASS
     def get_help_text(self, **kwargs):
