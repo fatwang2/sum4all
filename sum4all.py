@@ -60,7 +60,7 @@ class sum4all(Plugin):
             # 检查输入是否以"搜" 开头
         if content.startswith("搜") and self.search_sum:
             # Call new function to handle search operation
-            self.call_service(content, e_context)
+            self.call_service(content, e_context, "search")
             return
         if context.type == ContextType.SHARING:  #匹配卡片分享
             if unsupported_urls:  #匹配不支持总结的卡片
@@ -75,13 +75,13 @@ class sum4all(Plugin):
                 if isgroup:  #处理群聊总结
                     if self.group_sharing:  #group_sharing = True进行总结，False则忽略。
                         logger.info("[sum4all] Summary URL : %s", content)
-                        self.call_service(content, e_context)
+                        self.call_service(content, e_context, "sum")
                         return
                     else:
                         return
                 else:  #处理私聊总结
                     logger.info("[sum4all] Summary URL : %s", content)
-                    self.call_service(content, e_context)
+                    self.call_service(content, e_context, "sum")
                     return
         elif url_match: #匹配URL链接
             if unsupported_urls:  #匹配不支持总结的网址
@@ -91,22 +91,23 @@ class sum4all(Plugin):
                 e_context.action = EventAction.BREAK_PASS
             else:
                 logger.info("[sum4all] Summary URL : %s", content)
-                self.call_service(content, e_context)
+                self.call_service(content, e_context, "sum")
                 return
-    def call_service(self, content, e_context):
-        # 根据配置的服务进行不同的处理
-        if self.sum_service == "bibigpt":
-            self.handle_bibigpt(content, e_context)
-        elif self.sum_service == "openai":
-            self.handle_openai(content, e_context)
-        elif self.sum_service == "opensum":
-            self.handle_opensum(content, e_context)
-        elif self.sum_service == "sum4all":
-            self.handle_sum4all(content, e_context)
-        elif self.search_service == "sum4all":
-            self.handle_search(content, e_context)
-        elif self.search_service == "perplexity":
-            self.handle_perplexity(content, e_context)
+    def call_service(self, content, e_context, service_type):
+        if service_type == "search":
+            if self.search_service == "sum4all":
+                self.handle_search(content, e_context)
+            elif self.search_service == "perplexity":
+                self.handle_perplexity(content, e_context)
+        elif service_type == "sum":
+            if self.sum_service == "bibigpt":
+                self.handle_bibigpt(content, e_context)
+            elif self.sum_service == "openai":
+                self.handle_openai(content, e_context)
+            elif self.sum_service == "opensum":
+                self.handle_opensum(content, e_context)
+            elif self.sum_service == "sum4all":
+                self.handle_sum4all(content, e_context)
     
     def short_url(self, long_url):
         url = "https://short.fatwang2.com"
