@@ -344,13 +344,16 @@ class sum4all(Plugin):
             'Content-Type': 'application/json',
             'Authorization': f'Bearer {self.perplexity_key}'
         }
-        payload = json.dumps({
-            "ur": content,
-            "prompt": self.search_prompt
-        })
+        data = {
+            "model": "pplx-7b-online", 
+            "messages": [
+                {"role": "system", "content": self.search_prompt},
+                {"role": "user", "content": content}
+        ]
+        }
         try:
             api_url = "https://api.perplexity.ai/chat/completions"
-            response = requests.post(api_url, headers=headers, data=payload)
+            response = requests.post(api_url, headers=headers, json=data)
             response.raise_for_status()
             # 处理响应数据
             response_data = response.json()
