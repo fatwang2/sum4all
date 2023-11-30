@@ -104,9 +104,9 @@ class sum4all(Plugin):
         elif self.sum_service == "sum4all":
             self.handle_sum4all(content, e_context)
         elif self.search_service == "sum4all":
-            self.handle_search(content)
+            self.handle_search(content, e_context)
         elif self.search_service == "perplexity":
-            self.handle_perplexity(content)
+            self.handle_perplexity(content, e_context)
     
     def short_url(self, long_url):
         url = "https://short.fatwang2.com"
