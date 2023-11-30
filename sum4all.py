@@ -38,7 +38,7 @@ class sum4all(Plugin):
             self.sum4all_key = conf.get("sum4all_key","")
             self.search_sum = conf.get("search_sum","")
             self.perplexity_key = conf.get("perplexity_key","")
-            self.search_service = conf("search_service","")            
+            self.search_service = conf.get("search_service","")            
             # 设置事件处理函数
             self.handlers[Event.ON_HANDLE_CONTEXT] = self.on_handle_context
             # 初始化成功日志
