@@ -22,7 +22,7 @@ from pptx import Presentation
     desire_priority=2,
     hidden=True,
     desc="A plugin for summarizing all things",
-    version="0.2.7",
+    version="0.2.8",
     author="fatwang2",
 )
 EXTENSION_TO_TYPE = {
