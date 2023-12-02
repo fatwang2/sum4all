@@ -33,7 +33,7 @@ EXTENSION_TO_TYPE = {
     desire_priority=2,
     hidden=True,
     desc="A plugin for summarizing all things",
-    version="0.2.9",
+    version="0.2.11",
     author="fatwang2",
 )
 
@@ -64,7 +64,7 @@ class sum4all(Plugin):
             # 设置事件处理函数
             self.handlers[Event.ON_HANDLE_CONTEXT] = self.on_handle_context
             # 初始化成功日志
-            logger.info("sum4all inited.")
+            logger.info("[sum4all] inited.")
         
         except Exception as e:
             # 初始化失败日志
@@ -430,7 +430,7 @@ class sum4all(Plugin):
             response_data = response.json()
 
             if "choices" in response_data and len(response_data["choices"]) > 0:
-                return response_data["choices"][0].message['content'].strip()
+                return response_data["choices"][0]['message']['content'].strip()
             else:
                 return "OpenAI did not provide a summary."
 
