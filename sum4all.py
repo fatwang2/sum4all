@@ -33,7 +33,7 @@ EXTENSION_TO_TYPE = {
     desire_priority=2,
     hidden=True,
     desc="A plugin for summarizing all things",
-    version="0.2.15",
+    version="0.3.0",
     author="fatwang2",
 )
 

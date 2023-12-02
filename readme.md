@@ -2,6 +2,7 @@
 [telegram频道 ](https://t.me/+w2Z8S0Y8H2IxZDI9)
 
 ## 更新日志
+- V0.3.0，20231202，支持文件总结功能，常见pdf、doc、markdown、txt、xls、csv、html、ppt格式均支持
 - V0.2.6，20231130，新增支持Perplexity搜索，需自行注册申请key
 - V0.2.5，20231130，新增搜索prompt，支持单独配置
 - V0.2.4，20231125，新增各参数默认值，避免升级未修改配置文件带来的问题，修复OpenSum格式异常问题
@@ -24,10 +25,21 @@
 - V0.0.1，20230910，发布视频、文章总结插件
 
 ## 简介
-本项目为微信插件，需配合[chatgpt-on-wechat](https://github.com/zhayujie/chatgpt-on-wechat)项目使用，可以对文章、视频、播客内容做总结，覆盖b站、抖音、快手、小红书、微信等各个平台！已接入多加内容总结服务，支持自定义prompt，可根据自己的需求自行选择，具体效果如下
+本项目为微信插件，需配合[chatgpt-on-wechat](https://github.com/zhayujie/chatgpt-on-wechat)项目使用
+
+## 功能特点
+- 支持文章内容总结
+- 支持文件内容总结
+- 支持视频、播客内容总结
+- 支持联网实时搜索
+- 支持多种内容总结服务，可自由组合
+- 支持自定义prompt
+![文件](picture/WX20231202-182036@2x.png)
+![搜索](picture/WX20231202-183138@2x.png)
 ![链接卡片](picture/image-6.png)
 ![小红书](picture/image.png)
 ![抖音](picture/%E6%8A%96%E9%9F%B3.png)
+
 
 ## 安装
 使用管理员口令在线安装，管理员认证方法见：[管理员认证](https://github.com/zhayujie/chatgpt-on-wechat/tree/master/plugins/godcmd)
@@ -38,11 +50,11 @@
 
 ![Alt text](picture/image-4.png)
 
-## 申请服务（根据需要自行选择即可，各有优劣）
-OpenAI（支持绝大部分网页文章）：有OpenAI API权限即可，大模型效果最可控，也可以注册chatgpt-on-wechat官方的代理服务，正常填写即可[LinkAI](https://sum4all.site/linkai)
+## 申请服务（自行选择，各有优劣）
+OpenAI（支持文件、绝大部分网页文章）：有OpenAI API权限即可，大模型效果最可控，也可以注册chatgpt-on-wechat官方的代理服务，[LinkAI](https://sum4all.site/linkai)
 ![Alt text](picture/openai.png)
 
-Sum4all（支持搜索，支持绝大部分网页文章）：跟上面的区别就是我换了个国内的大模型，注册免费送10万token，邀请好友注册再各得5万，后面怎么定价还没想好，点击链接可注册，[sum4all](https://sum4all.site/key)，获取总结key。交流请加入[telegram频道 ](https://t.me/+w2Z8S0Y8H2IxZDI9)
+Sum4all（支持搜索、文件、绝大部分网页文章）：跟上面的区别就是我换了个国内的大模型，注册免费送10万token，邀请好友注册再各得5万，后面怎么定价还没想好，点击链接可注册，[sum4all](https://sum4all.site/key)，获取总结key。问题交流请加入[telegram频道 ](https://t.me/+w2Z8S0Y8H2IxZDI9)
 
 另外，现在已推出Poe上的Sum4all机器人，支持文章与YouTube视频内容总结，推荐体验，[poe机器人](https://sum4all.site/poe)
 ![Alt text](picture/sum4all.png)
@@ -53,7 +65,7 @@ Perplexity（支持搜索）：国外的搜索总结服务，非常好用，速�
 ![Alt text](picture/WX20231201-004703@2x.png)
 ![Alt text](picture/WX20231201-004718@2x.png)
 
-BibiGPT（文章、视频、音频）：通过链接注册 [BibiGPT](https://sum4all.site/bibigpt)，获取总结key，注册免费享有60min时长，请注意，只有 `https://bibigpt.co/api/open/` 后面的部分是key
+BibiGPT（支持文章、视频、音频）：通过链接注册 [BibiGPT](https://sum4all.site/bibigpt)，获取总结key，注册免费享有60min时长，请注意，只有 `https://bibigpt.co/api/open/` 后面的部分是key
 
 ![Alt text](picture/image-3.png)
 
@@ -69,6 +81,7 @@ OpenSum（支持微信、头条、即刻等主流平台网页文章）：通过�
 ```
 "sum_service":"", #内容总结服务，openai、sum4all、bibigpt、opensum
 "search_sum":"", #搜索开关，默认不开启，开启需改为 true
+"file_sum": false, #文件总计开关，默认不开启，开启需改为 true
 "search_service":"", #搜索服务，目前支持sum4all和perplexity
 "group_sharing": true, #是否支持群聊内的链接卡片
 "sum4all_key":"", #如选sum4all，则必填
@@ -102,7 +115,6 @@ bibigpt输出语言支持列表：
 ## 后续计划
 - 支持企业微信的链接卡片
 - 支持输出总结图片
-- 支持文件总结
 - 支持文章、文件对话
 - 支持视频号总结
 - 支持通过管理员指令切换内容总结服务、配置参数等
