@@ -16,6 +16,7 @@ from openpyxl import load_workbook
 import csv
 from bs4 import BeautifulSoup
 from pptx import Presentation
+import base64
 
 EXTENSION_TO_TYPE = {
     'pdf': 'pdf',
@@ -32,7 +33,7 @@ EXTENSION_TO_TYPE = {
     name="sum4all",
     desire_priority=2,
     desc="A plugin for summarizing all things",
-    version="0.3.5",
+    version="0.3.6",
     author="fatwang2",
 )
 
@@ -104,14 +105,13 @@ class sum4all(Plugin):
             else:
                 logger.info("文件总结功能已禁用，不对文件内容进行处理")
         elif context.type == ContextType.IMAGE:
-            logger.info("on_handle_context: 处理上下文开始")
+            logger.info("on_handle_context: 开始处理图片")
             context.get("msg").prepare()
             image_path = context.content
             logger.info(f"on_handle_context: 获取到图片路径 {image_path}")
             # 检查是否应该进行图片总结
             if self.image_sum:
-                content = self.extract_content(image_path)  # 提取内容
-                self.handle_openai_image(content, e_context)
+                self.handle_openai_image(image_path, e_context)
             else:
                 logger.info("图片总结功能已禁用，不对图片内容进行处理")
         elif context.type == ContextType.SHARING:  #匹配卡片分享
@@ -601,3 +601,68 @@ class sum4all(Plugin):
             return None
         logger.info("extract_content: 文件内容提取完成")
         return read_func(file_path)
+    # Function to encode the image
+    def encode_image(image_path):
+        with open(image_path, "rb") as image_file:
+            return base64.b64encode(image_file.read()).decode('utf-8')
+    # Function to handle OpenAI image processing
+    def handle_openai_image(image_path, e_context):
+        logger.info("handle_openai_image_response: 解析OpenAI图像处理API的响应")
+
+        # Getting the base64 string
+        base64_image = encode_image(image_path)
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {self.open_ai_api_key}"
+        }
+
+        payload = {
+            "model": "gpt-4-vision-preview",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": "图片讲了什么?"
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{base64_image}"
+                            }
+                        }
+                    ]
+                }
+            ],
+            "max_tokens": 300
+        }
+
+        try:
+            response = requests.post(f"{self.open_ai_api_base}/chat/completions", headers=headers, json=payload)
+            response.raise_for_status()  # 增加对HTTP错误的检查
+            response_json = response.json()  # 定义response_json
+            # 确保响应中有 'choices' 键并且至少有一个元素
+            if "choices" in response_json and len(response_json["choices"]) > 0:
+                first_choice = response_json["choices"][0]
+                if "message" in first_choice and "content" in first_choice["message"]:
+                    # 从响应中提取 'content'
+                    response_content = first_choice["message"]["content"].strip()
+                    logger.info("OpenAI API response content")  # 记录响应内容
+                    reply_content = response_content
+                else:
+                    logger.error("Content not found in the response")
+                    reply_content = "Content not found in the OpenAI API response"
+            else:
+                logger.error("No choices available in the response")
+                reply_content = "No choices available in the OpenAI API response"
+        except Exception as e:
+            logger.error(f"Error processing OpenAI API response: {e}")
+            reply_content = f"An error occurred while processing OpenAI API response: {e}"
+
+        reply = Reply()
+        reply.type = ReplyType.TEXT
+        reply.content = reply_content  # 设置响应内容到回复对象
+        e_context["reply"] = reply
+        e_context.action = EventAction.BREAK_PASS
