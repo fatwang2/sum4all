@@ -33,7 +33,7 @@ EXTENSION_TO_TYPE = {
     desire_priority=2,
     hidden=True,
     desc="A plugin for summarizing all things",
-    version="0.2.12",
+    version="0.2.13",
     author="fatwang2",
 )
 
@@ -90,9 +90,7 @@ class sum4all(Plugin):
             file_path = context.content
             logger.info(f"on_handle_context: 获取到文件路径 {file_path}")
             content = self.extract_content(file_path)  # 提取内容
-            self.process_and_summarize_file(content, e_context)  # 处理文件并总结
-
-            logger.info("on_handle_context: 文件处理请求已发送")
+            self.handle_openai_file(content, e_context)
         if context.type == ContextType.SHARING:  #匹配卡片分享
             if unsupported_urls:  #匹配不支持总结的卡片
                 if isgroup:  ##群聊中忽略
@@ -567,8 +565,4 @@ class sum4all(Plugin):
             logger.error(f"不支持的文件类型: {file_type}")
             return None
         logger.info("extract_content: 文件内容提取完成")
-
         return read_func(file_path)
-    def process_and_summarize_file(self, content, e_context):
-        self.handle_openai_file(content, e_context)
-        logger.info(f"Response content to be sent: {response_content}")
