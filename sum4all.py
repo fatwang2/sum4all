@@ -31,9 +31,8 @@ EXTENSION_TO_TYPE = {
 @plugins.register(
     name="sum4all",
     desire_priority=2,
-    hidden=True,
     desc="A plugin for summarizing all things",
-    version="0.3.0",
+    version="0.3.1",
     author="fatwang2",
 )
 
@@ -44,6 +43,8 @@ class sum4all(Plugin):
         try:
             # 使用父类的方法来加载配置
             conf = super().load_config()
+            # 设置事件处理函数
+            self.handlers[Event.ON_HANDLE_CONTEXT] = self.on_handle_context
             if not conf:
                 raise Exception("config.json not found")
             # 从配置中提取所需的设置
@@ -62,8 +63,7 @@ class sum4all(Plugin):
             self.file_sum = conf.get("file_sum","")
             self.perplexity_key = conf.get("perplexity_key","")
             self.search_service = conf.get("search_service","")            
-            # 设置事件处理函数
-            self.handlers[Event.ON_HANDLE_CONTEXT] = self.on_handle_context
+            
             # 初始化成功日志
             logger.info("[sum4all] inited.")
         
