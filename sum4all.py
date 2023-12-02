@@ -601,14 +601,14 @@ class sum4all(Plugin):
             return None
         logger.info("extract_content: 文件内容提取完成")
         return read_func(file_path)
-    # Function to encode the image
-    def encode_image(image_path):
-        with open(image_path, "rb") as image_file:
-            return base64.b64encode(image_file.read()).decode('utf-8')
+    
     # Function to handle OpenAI image processing
     def handle_openai_image(self, image_path, e_context):
         logger.info("handle_openai_image_response: 解析OpenAI图像处理API的响应")
-
+        # Function to encode the image
+        def encode_image(image_path):
+            with open(image_path, "rb") as image_file:
+                return base64.b64encode(image_file.read()).decode('utf-8')
         # Getting the base64 string
         base64_image = encode_image(image_path)
 
