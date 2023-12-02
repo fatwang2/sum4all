@@ -32,7 +32,7 @@ EXTENSION_TO_TYPE = {
     name="sum4all",
     desire_priority=2,
     desc="A plugin for summarizing all things",
-    version="0.3.3",
+    version="0.3.4",
     author="fatwang2",
 )
 
@@ -41,33 +41,38 @@ class sum4all(Plugin):
     def __init__(self):
         super().__init__()
         try:
-            # 使用父类的方法来加载配置
-            self.config = super().load_config()
+            curdir = os.path.dirname(__file__)
+            config_path = os.path.join(curdir, "config.json")
+            if os.path.exists(config_path):
+                with open(config_path, "r", encoding="utf-8") as f:
+                    self.config = json.load(f)
+            else:
+                # 使用父类的方法来加载配置
+                self.config = super().load_config()
+                
+                if not self.config:
+                    raise Exception("config.json not found")
             # 设置事件处理函数
             self.handlers[Event.ON_HANDLE_CONTEXT] = self.on_handle_context
-            if not self.config:
-                raise Exception("config.json not found")
             # 从配置中提取所需的设置
-            if self.config:
-                self.sum_service = self.config.get("sum_service","")
-                self.bibigpt_key = self.config.get("bibigpt_key","")
-                self.outputLanguage = self.config.get("outputLanguage","zh-CN")
-                self.group_sharing = self.config.get("group_sharing","true")
-                self.opensum_key = self.config.get("opensum_key","")
-                self.open_ai_api_key = self.config.get("open_ai_api_key","")
-                self.model = self.config.get("model","gpt-3.5-turbo")
-                self.open_ai_api_base = self.config.get("open_ai_api_base","https://api.openai.com/v1")
-                self.prompt = self.config.get("prompt","你是一个新闻专家，我会给你发一些网页内容，请你用简单明了的语言做总结。格式如下：📌总结\n一句话讲清楚整篇文章的核心观点，控制在30字左右。\n\n💡要点\n用数字序号列出来3-5个文章的核心内容，尽量使用emoji让你的表达更生动，请注意输出的内容不要有两个转义符")
-                self.search_prompt = self.config.get("search_prompt","你是一个信息检索专家，请你用简单明了的语言，对你收到的内容做总结。尽量使用emoji让你的表达更生动")
-                self.sum4all_key = self.config.get("sum4all_key","")
-                self.search_sum = self.config.get("search_sum","")
-                self.file_sum = self.config.get("file_sum","")
-                self.perplexity_key = self.config.get("perplexity_key","")
-                self.search_service = self.config.get("search_service","")            
-            
+            self.sum_service = self.config.get("sum_service","")
+            self.bibigpt_key = self.config.get("bibigpt_key","")
+            self.outputLanguage = self.config.get("outputLanguage","zh-CN")
+            self.group_sharing = self.config.get("group_sharing","true")
+            self.opensum_key = self.config.get("opensum_key","")
+            self.open_ai_api_key = self.config.get("open_ai_api_key","")
+            self.model = self.config.get("model","gpt-3.5-turbo")
+            self.open_ai_api_base = self.config.get("open_ai_api_base","https://api.openai.com/v1")
+            self.prompt = self.config.get("prompt","你是一个新闻专家，我会给你发一些网页内容，请你用简单明了的语言做总结。格式如下：📌总结\n一句话讲清楚整篇文章的核心观点，控制在30字左右。\n\n💡要点\n用数字序号列出来3-5个文章的核心内容，尽量使用emoji让你的表达更生动，请注意输出的内容不要有两个转义符")
+            self.search_prompt = self.config.get("search_prompt","你是一个信息检索专家，请你用简单明了的语言，对你收到的内容做总结。尽量使用emoji让你的表达更生动")
+            self.sum4all_key = self.config.get("sum4all_key","")
+            self.search_sum = self.config.get("search_sum","")
+            self.file_sum = self.config.get("file_sum","")
+            self.perplexity_key = self.config.get("perplexity_key","")
+            self.search_service = self.config.get("search_service","")            
+                
             # 初始化成功日志
             logger.info("[sum4all] inited.")
-        
         except Exception as e:
             # 初始化失败日志
             logger.warn(f"sum4all init failed: {e}")
