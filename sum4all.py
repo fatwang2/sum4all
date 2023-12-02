@@ -25,6 +25,17 @@ from pptx import Presentation
     version="0.2.7",
     author="fatwang2",
 )
+EXTENSION_TO_TYPE = {
+    'pdf': 'pdf',
+    'doc': 'docx', 'docx': 'docx',
+    'md': 'md',
+    'txt': 'txt',
+    'xls': 'excel', 'xlsx': 'excel',
+    'csv': 'csv',
+    'html': 'html', 'htm': 'html',
+    'ppt': 'ppt', 'pptx': 'ppt'
+}
+
 class sum4all(Plugin):
     def __init__(self):
         super().__init__()
@@ -423,18 +434,8 @@ class sum4all(Plugin):
         reply.content = f"{content}"            
         e_context["reply"] = reply
         e_context.action = EventAction.BREAK_PASS
-EXTENSION_TO_TYPE = {
-    'pdf': 'pdf',
-    'doc': 'docx', 'docx': 'docx',
-    'md': 'md',
-    'txt': 'txt',
-    'xls': 'excel', 'xlsx': 'excel',
-    'csv': 'csv',
-    'html': 'html', 'htm': 'html',
-    'ppt': 'ppt', 'pptx': 'ppt'
-}
-class File:
-        # 在 read_pdf 方法的开始和结束添加日志
+
+
     def read_pdf(self, file_path):
         logger.info(f"开始读取PDF文件：{file_path}")
         doc = fitz.open(file_path)
