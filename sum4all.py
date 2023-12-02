@@ -33,7 +33,7 @@ EXTENSION_TO_TYPE = {
     desire_priority=2,
     hidden=True,
     desc="A plugin for summarizing all things",
-    version="0.2.11",
+    version="0.2.12",
     author="fatwang2",
 )
 
@@ -429,16 +429,26 @@ class sum4all(Plugin):
             response.raise_for_status()
             response_data = response.json()
 
+            # 解析 JSON 并获取 content
             if "choices" in response_data and len(response_data["choices"]) > 0:
-                return response_data["choices"][0]['message']['content'].strip()
+                first_choice = response_data["choices"][0]
+                if "message" in first_choice and "content" in first_choice["message"]:
+                    response_content = first_choice["message"]["content"].strip()  # 获取响应内容
+                    logger.info(f"OpenAI API response content: {response_content}")  # 记录响应内容
+                else:
+                    logger.error("Content not found in the response")
+                    response_content = "Content not found in the OpenAI API response"
             else:
-                return "OpenAI did not provide a summary."
+                logger.error("No choices available in the response")
+                response_content = "No choices available in the OpenAI API response"
 
         except requests.exceptions.RequestException as e:
-            logger.error(f"Error calling OpenAI API: {e}")        
+            logger.error(f"Error calling OpenAI API: {e}")
+            response_content = f"An error occurred while calling OpenAI API: {e}"
+
         reply = Reply()
         reply.type = ReplyType.TEXT
-        reply.content = f"{content}"            
+        reply.content = response_content  # 设置响应内容到回复对象
         e_context["reply"] = reply
         e_context.action = EventAction.BREAK_PASS
 
@@ -561,3 +571,4 @@ class sum4all(Plugin):
         return read_func(file_path)
     def process_and_summarize_file(self, content, e_context):
         self.handle_openai_file(content, e_context)
+        logger.info(f"Response content to be sent: {response_content}")
