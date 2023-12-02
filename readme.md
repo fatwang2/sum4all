@@ -2,6 +2,7 @@
 [telegram频道 ](https://t.me/+w2Z8S0Y8H2IxZDI9)
 
 ## 更新日志
+- V0.3.4，20231202，修复插件配置更新问题，已支持插件更新后通过reloadp重新加载生效
 - V0.3.0，20231202，支持文件总结功能，常见pdf、doc、markdown、txt、xls、csv、html、ppt格式均支持，需安装requirements.txt依赖，更新配置文件
 - V0.2.6，20231130，新增支持Perplexity搜索，需自行注册申请key，更新配置文件
 - V0.2.5，20231130，新增搜索prompt，支持单独配置
