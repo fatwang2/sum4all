@@ -33,7 +33,7 @@ EXTENSION_TO_TYPE = {
     name="sum4all",
     desire_priority=2,
     desc="A plugin for summarizing all things",
-    version="0.3.6",
+    version="0.4.0",
     author="fatwang2",
 )
 
@@ -104,6 +104,9 @@ class sum4all(Plugin):
                 self.handle_openai_file(content, e_context)
             else:
                 logger.info("文件总结功能已禁用，不对文件内容进行处理")
+                # 删除文件
+            os.remove(file_path)
+            logger.info(f"文件 {file_path} 已删除")
         elif context.type == ContextType.IMAGE:
             logger.info("on_handle_context: 开始处理图片")
             context.get("msg").prepare()
@@ -114,6 +117,9 @@ class sum4all(Plugin):
                 self.handle_openai_image(image_path, e_context)
             else:
                 logger.info("图片总结功能已禁用，不对图片内容进行处理")
+                # 删除图片
+            os.remove(image_path)
+            logger.info(f"图片 {image_path} 已删除")
         elif context.type == ContextType.SHARING:  #匹配卡片分享
             if unsupported_urls:  #匹配不支持总结的卡片
                 if isgroup:  ##群聊中忽略

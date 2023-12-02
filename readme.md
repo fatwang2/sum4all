@@ -2,6 +2,7 @@
 [telegram频道 ](https://t.me/+w2Z8S0Y8H2IxZDI9)
 
 ## 更新日志
+- V0.4.0，20231203，支持图片总结功能，png、jpeg、jpg等，需更新配置文件
 - V0.3.4，20231202，修复插件配置更新问题，已支持插件更新后通过reloadp重新加载生效
 - V0.3.0，20231202，支持文件总结功能，常见pdf、doc、markdown、txt、xls、csv、html、ppt格式均支持，需安装requirements.txt依赖，更新配置文件
 - V0.2.6，20231130，新增支持Perplexity搜索，需自行注册申请key，更新配置文件
@@ -32,6 +33,7 @@
 - 支持联网实时搜索
 - 支持文章内容总结，个人微信支持链接卡片和url，企微支持url
 - 支持文件内容总结，包括pdf、doc、markdown、txt、xls、csv、html、ppt
+- 支持图片总结，包括png、jpeg、jpg
 - 支持视频、播客内容总结，包括抖音、b站、小红书、YouTube等
 - 支持多种内容总结服务，可自由组合
 - 支持自定义prompt
@@ -39,10 +41,12 @@
   <tr>
     <td><img src="picture/WX20231202-182036@2x.png" width="400px" alt="文件" /></td>
     <td><img src="picture/WX20231202-183138@2x.png" width="400px" alt="搜索" /></td>
+    <td><img src="picture/WX20231203-021149@2x.png" width="400px" alt="图片" /></td>
   </tr>
   <tr>
     <td><img src="picture/image-6.png" width="400px" alt="链接卡片" /></td>
     <td><img src="picture/抖音.png" width="400px" alt="抖音" /></td>    
+    <td><img src="picture/image.png" width="400px" alt="小红书" /></td> 
   </tr>
 </table>
 
@@ -59,7 +63,7 @@
 
 | 服务 | 支持功能 | 特点 | 注册地址 | 图片介绍 |
 |------|----------|------|----------|-----------|
-| OpenAI | 文件、绝大部分网页文章 | 无需额外申请服务，舍得花钱的话，效果最可控 | [OpenAI](https://platform.openai.com/account/api-keys) \| [LinkAI代理](https://sum4all.site/linkai) | ![OpenAI](picture/openai.png) |
+| OpenAI | 文件、图片、绝大部分网页文章 | 无需额外申请服务，舍得花钱的话，效果最可控 | [OpenAI](https://platform.openai.com/account/api-keys) \| [LinkAI代理](https://sum4all.site/linkai) | ![OpenAI](picture/openai.png) |
 | Sum4all | 搜索、文件、绝大部分网页文章 | 注册免费送10万token，邀请好友注册再各得5万，觉得好用的还可以注册Poe上的同名机器人 | [sum4all](https://sum4all.site/key) \| [Poe Sum4all机器人](https://sum4all.site/poe) | ![Sum4all](picture/sum4all.png) |
 | Perplexity | 搜索 | 国外的搜索总结服务，速度快，价格贵，自带大模型，需自行注册和付费 | [Perplexity](https://sum4all.site/perplexity) | ![Perplexity](picture/p.png) | ![Alt text](picture/WX20231201-004639@2x.png) |
 | BibiGPT | 文章、视频、音频 | 注册免费享有60min时长 | [BibiGPT](https://sum4all.site/bibigpt) | ![BibiGPT](picture/image-3.png) |
@@ -74,8 +78,9 @@
 ```
 "sum_service":"", #内容总结服务，openai、sum4all、bibigpt、opensum
 "search_sum":"", #搜索开关，默认不开启，开启需改为 true
-"file_sum": false, #文件总计开关，默认不开启，开启需改为 true
-"search_service":"", #搜索服务，目前支持sum4all和perplexity
+"file_sum": false, #文件总结开关，默认不开启，开启需改为 true，目前支持sum_service为openai和sum4all
+"image_sum": false, #图片总结开关，默认不开启，开启需改为 true，目前支持sum_service为为openai
+"search_service":"", #搜索服务，目前支持sum_service为sum4all和perplexity
 "group_sharing": true, #是否支持群聊内的链接卡片
 "sum4all_key":"", #如选sum4all，则必填
 "opensum_key": "", #如选opensum，则必填
