@@ -2,8 +2,8 @@
 [telegram频道 ](https://t.me/+w2Z8S0Y8H2IxZDI9)
 
 ## 更新日志
-- V0.3.0，20231202，支持文件总结功能，常见pdf、doc、markdown、txt、xls、csv、html、ppt格式均支持
-- V0.2.6，20231130，新增支持Perplexity搜索，需自行注册申请key
+- V0.3.0，20231202，支持文件总结功能，常见pdf、doc、markdown、txt、xls、csv、html、ppt格式均支持，需安装requirements.txt依赖，更新配置文件
+- V0.2.6，20231130，新增支持Perplexity搜索，需自行注册申请key，更新配置文件
 - V0.2.5，20231130，新增搜索prompt，支持单独配置
 - V0.2.4，20231125，新增各参数默认值，避免升级未修改配置文件带来的问题，修复OpenSum格式异常问题
 - V0.2.3，20231125，更新短链接服务
@@ -28,18 +28,22 @@
 本项目为微信插件，需配合[chatgpt-on-wechat](https://github.com/zhayujie/chatgpt-on-wechat)项目使用
 
 ## 功能特点
-- 支持文章内容总结
-- 支持文件内容总结
-- 支持视频、播客内容总结
 - 支持联网实时搜索
+- 支持文章内容总结，个人微信支持链接卡片和url，企微支持url
+- 支持文件内容总结，包括pdf、doc、markdown、txt、xls、csv、html、ppt
+- 支持视频、播客内容总结，包括抖音、b站、小红书、YouTube等
 - 支持多种内容总结服务，可自由组合
 - 支持自定义prompt
-![文件](picture/WX20231202-182036@2x.png)
-![搜索](picture/WX20231202-183138@2x.png)
-![链接卡片](picture/image-6.png)
-![小红书](picture/image.png)
-![抖音](picture/%E6%8A%96%E9%9F%B3.png)
-
+<table>
+  <tr>
+    <td><img src="picture/WX20231202-182036@2x.png" width="400px" alt="文件" /></td>
+    <td><img src="picture/WX20231202-183138@2x.png" width="400px" alt="搜索" /></td>
+  </tr>
+  <tr>
+    <td><img src="picture/image-6.png" width="400px" alt="链接卡片" /></td>
+    <td><img src="picture/抖音.png" width="400px" alt="抖音" /></td>    
+  </tr>
+</table>
 
 ## 安装
 使用管理员口令在线安装，管理员认证方法见：[管理员认证](https://github.com/zhayujie/chatgpt-on-wechat/tree/master/plugins/godcmd)
@@ -51,26 +55,14 @@
 ![Alt text](picture/image-4.png)
 
 ## 申请服务（自行选择，各有优劣）
-OpenAI（支持文件、绝大部分网页文章）：有OpenAI API权限即可，大模型效果最可控，也可以注册chatgpt-on-wechat官方的代理服务，[LinkAI](https://sum4all.site/linkai)
-![Alt text](picture/openai.png)
 
-Sum4all（支持搜索、文件、绝大部分网页文章）：跟上面的区别就是我换了个国内的大模型，注册免费送10万token，邀请好友注册再各得5万，后面怎么定价还没想好，点击链接可注册，[sum4all](https://sum4all.site/key)，获取总结key。问题交流请加入[telegram频道 ](https://t.me/+w2Z8S0Y8H2IxZDI9)
-
-另外，现在已推出Poe上的Sum4all机器人，支持文章与YouTube视频内容总结，推荐体验，[poe机器人](https://sum4all.site/poe)
-![Alt text](picture/sum4all.png)
-
-Perplexity（支持搜索）：国外的搜索总结服务，非常好用，速度贼快！需自行注册、自行付费，不便宜，嫌贵的也可以用上面的sum4all，也支持搜索了， [Perplexity](https://sum4all.site/perplexity)
-![Alt text](picture/p.png)
-![Alt text](picture/WX20231201-004639@2x.png)
-![Alt text](picture/WX20231201-004703@2x.png)
-![Alt text](picture/WX20231201-004718@2x.png)
-
-BibiGPT（支持文章、视频、音频）：通过链接注册 [BibiGPT](https://sum4all.site/bibigpt)，获取总结key，注册免费享有60min时长，请注意，只有 `https://bibigpt.co/api/open/` 后面的部分是key
-
-![Alt text](picture/image-3.png)
-
-OpenSum（支持微信、头条、即刻等主流平台网页文章）：通过链接注册 [OpenSum](https://sum4all.site/opensum)，获取总结key，19元30万字
-![Alt text](picture/opensum.png)
+| 服务 | 支持功能 | 特点 | 注册地址 | 图片介绍 |
+|------|----------|------|----------|-----------|
+| OpenAI | 文件、绝大部分网页文章 | 无需额外申请服务，舍得花钱的话，效果最可控 | [OpenAI](https://platform.openai.com/account/api-keys) \| [LinkAI代理](https://sum4all.site/linkai) | ![OpenAI](picture/openai.png) |
+| Sum4all | 搜索、文件、绝大部分网页文章 | 注册免费送10万token，邀请好友注册再各得5万，觉得好用的还可以注册Poe上的同名机器人 | [sum4all](https://sum4all.site/key) \| [Poe Sum4all机器人](https://sum4all.site/poe) | ![Sum4all](picture/sum4all.png) |
+| Perplexity | 搜索 | 国外的搜索总结服务，速度快，价格贵，自带大模型，需自行注册和付费 | [Perplexity](https://sum4all.site/perplexity) | ![Perplexity](picture/p.png) | ![Alt text](picture/WX20231201-004639@2x.png) |
+| BibiGPT | 文章、视频、音频 | 注册免费享有60min时长 | [BibiGPT](https://sum4all.site/bibigpt) | ![BibiGPT](picture/image-3.png) |
+| OpenSum | 微信、头条、即刻等平台网页文章 | 19元30万字 | [OpenSum](https://sum4all.site/opensum) | ![OpenSum](picture/opensum.png) |
 
 
 ## 配置
