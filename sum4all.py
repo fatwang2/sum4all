@@ -49,7 +49,7 @@ class sum4all(Plugin):
                 raise Exception("config.json not found")
             # 从配置中提取所需的设置
             if self.config:
-                self.sum_service = self.config.get()("sum_service","")
+                self.sum_service = self.config.get("sum_service","")
                 self.bibigpt_key = self.config.get("bibigpt_key","")
                 self.outputLanguage = self.config.get("outputLanguage","zh-CN")
                 self.group_sharing = self.config.get("group_sharing","true")
