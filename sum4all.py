@@ -85,9 +85,13 @@ class sum4all(Plugin):
             self.call_service(content, e_context, "search")
             return
         if context.type == ContextType.FILE:
+            logger.info("on_handle_context: 处理上下文开始")
             context.get("msg").prepare()
             file_path = context.content
+            logger.info(f"on_handle_context: 获取到文件路径 {file_path}")
             self.process_and_summarize_file(file_path)
+            logger.info("on_handle_context: 文件处理请求已发送")
+
         if context.type == ContextType.SHARING:  #匹配卡片分享
             if unsupported_urls:  #匹配不支持总结的卡片
                 if isgroup:  ##群聊中忽略
@@ -406,6 +410,7 @@ class sum4all(Plugin):
         help_text = "输入url/分享链接/搜索关键词，直接为你总结\n"
         return help_text
     def handle_openai_file(self, content, e_context):
+        logger.info("handle_openai_file: 向OpenAI发送内容总结请求")
 
         headers = {
             'Content-Type': 'application/json',
@@ -418,7 +423,6 @@ class sum4all(Plugin):
                 {"role": "user", "content": content}
             ]
         }
-
         try:
             response = requests.post(f"{self.open_ai_api_base}/chat/completions", headers=headers, data=json.dumps(data))
             response.raise_for_status()
@@ -443,6 +447,7 @@ class sum4all(Plugin):
         doc = fitz.open(file_path)
         content = ' '.join([page.get_text() for page in doc])
         logger.info(f"PDF文件读取完成：{file_path}")
+
         return content
 
     def read_word(self, file_path):
@@ -525,7 +530,11 @@ class sum4all(Plugin):
         logger.debug(f"分段文本: {segments}")
         return segments
     def extract_content(self, file_path):
+        logger.info(f"extract_content: 提取文件内容，文件路径: {file_path}")
+    
         file_extension = os.path.splitext(file_path)[1][1:].lower()
+        logger.info(f"extract_content: 文件类型为 {file_extension}")
+    
         file_type = EXTENSION_TO_TYPE.get(file_extension)
 
         if not file_type:
@@ -546,8 +555,9 @@ class sum4all(Plugin):
         if not read_func:
             logger.error(f"不支持的文件类型: {file_type}")
             return None
+        logger.info("extract_content: 文件内容提取完成")
 
         return read_func(file_path)
-    def process_and_summarize_file(self, file_path):
+    def process_and_summarize_file(self, file_path, e_context):
         content = self.extract_content(file_path)
-        return self.handle_openai_file(content)
+        return self.handle_openai_file(content, e_context)
