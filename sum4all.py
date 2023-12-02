@@ -606,7 +606,7 @@ class sum4all(Plugin):
         with open(image_path, "rb") as image_file:
             return base64.b64encode(image_file.read()).decode('utf-8')
     # Function to handle OpenAI image processing
-    def handle_openai_image(image_path, e_context):
+    def handle_openai_image(self, image_path, e_context):
         logger.info("handle_openai_image_response: 解析OpenAI图像处理API的响应")
 
         # Getting the base64 string
