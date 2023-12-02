@@ -32,7 +32,7 @@ EXTENSION_TO_TYPE = {
     name="sum4all",
     desire_priority=2,
     desc="A plugin for summarizing all things",
-    version="0.3.4",
+    version="0.3.5",
     author="fatwang2",
 )
 
@@ -79,7 +79,7 @@ class sum4all(Plugin):
             logger.warn(f"sum4all init failed: {e}")
     def on_handle_context(self, e_context: EventContext):
         context = e_context["context"]
-        if context.type not in [ContextType.TEXT, ContextType.SHARING,ContextType.FILE]:
+        if context.type not in [ContextType.TEXT, ContextType.SHARING,ContextType.FILE,ContextType.IMAGE]:
             return
         content = context.content
         isgroup = e_context["context"].get("isgroup", False)
