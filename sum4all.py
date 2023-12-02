@@ -17,14 +17,6 @@ import csv
 from bs4 import BeautifulSoup
 from pptx import Presentation
 
-@plugins.register(
-    name="sum4all",
-    desire_priority=2,
-    hidden=True,
-    desc="A plugin for summarizing all things",
-    version="0.2.8",
-    author="fatwang2",
-)
 EXTENSION_TO_TYPE = {
     'pdf': 'pdf',
     'doc': 'docx', 'docx': 'docx',
@@ -35,6 +27,16 @@ EXTENSION_TO_TYPE = {
     'html': 'html', 'htm': 'html',
     'ppt': 'ppt', 'pptx': 'ppt'
 }
+
+@plugins.register(
+    name="sum4all",
+    desire_priority=2,
+    hidden=True,
+    desc="A plugin for summarizing all things",
+    version="0.2.8",
+    author="fatwang2",
+)
+
 
 class sum4all(Plugin):
     def __init__(self):
