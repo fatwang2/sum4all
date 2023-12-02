@@ -33,7 +33,7 @@ EXTENSION_TO_TYPE = {
     desire_priority=2,
     hidden=True,
     desc="A plugin for summarizing all things",
-    version="0.2.13",
+    version="0.2.14",
     author="fatwang2",
 )
 
@@ -236,12 +236,12 @@ class sum4all(Plugin):
                 reply_content = additional_content + content  # 将内容加入回复
                 
             else:
-                content = "Content not found or error in response"
+                reply_content = "Content not found or error in response"
 
         except requests.exceptions.RequestException as e:
             # 处理可能出现的错误
             logger.error(f"Error calling new combined api: {e}")
-            content = f"An error occurred: {e}"
+            reply_content = f"An error occurred: {e}"
 
         reply = Reply()
         reply.type = ReplyType.TEXT
@@ -278,7 +278,7 @@ class sum4all(Plugin):
             # 移除 "##摘要"、"## 亮点" 和 "-"
             summary = summary_original.split("详细版（支持对话追问）")[0].replace("## 摘要\n", "📌总结：").replace("## 亮点\n", "").replace("- ", "")
         except requests.exceptions.RequestException as e:
-            summary = f"An error occurred: {e}"
+            reply = f"An error occurred: {e}"
 
         reply = Reply()
         reply.type = ReplyType.TEXT
@@ -360,7 +360,7 @@ class sum4all(Plugin):
         except requests.exceptions.RequestException as e:
             # 处理可能出现的错误
             logger.error(f"Error calling new combined api: {e}")
-            content = f"An error occurred: {e}"
+            reply_content = f"An error occurred: {e}"
 
         reply = Reply()
         reply.type = ReplyType.TEXT
@@ -432,21 +432,22 @@ class sum4all(Plugin):
                 first_choice = response_data["choices"][0]
                 if "message" in first_choice and "content" in first_choice["message"]:
                     response_content = first_choice["message"]["content"].strip()  # 获取响应内容
-                    logger.info(f"OpenAI API response content: {response_content}")  # 记录响应内容
+                    logger.info(f"OpenAI API response content")  # 记录响应内容
+                    reply_content = response_content.replace("\\n", "\n")  # 替换 \\n 为 \n
                 else:
                     logger.error("Content not found in the response")
-                    response_content = "Content not found in the OpenAI API response"
+                    reply_content = "Content not found in the OpenAI API response"
             else:
                 logger.error("No choices available in the response")
-                response_content = "No choices available in the OpenAI API response"
+                reply_content = "No choices available in the OpenAI API response"
 
         except requests.exceptions.RequestException as e:
             logger.error(f"Error calling OpenAI API: {e}")
-            response_content = f"An error occurred while calling OpenAI API: {e}"
+            reply_content = f"An error occurred while calling OpenAI API: {e}"
 
         reply = Reply()
         reply.type = ReplyType.TEXT
-        reply.content = response_content  # 设置响应内容到回复对象
+        reply.content = reply_content  # 设置响应内容到回复对象
         e_context["reply"] = reply
         e_context.action = EventAction.BREAK_PASS
 
