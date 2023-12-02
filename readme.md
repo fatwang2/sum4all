@@ -39,7 +39,7 @@
 ![Alt text](picture/image-4.png)
 
 ## 申请服务（根据需要自行选择即可，各有优劣）
-OpenAI（支持绝大部分网页文章）：有OpenAI API权限即可，大模型效果最可控
+OpenAI（支持绝大部分网页文章）：有OpenAI API权限即可，大模型效果最可控，也可以注册chatgpt-on-wechat官方的代理服务，正常填写即可[LinkAI](https://sum4all.site/linkai)
 ![Alt text](picture/openai.png)
 
 Sum4all（支持搜索，支持绝大部分网页文章）：跟上面的区别就是我换了个国内的大模型，注册免费送10万token，邀请好友注册再各得5万，后面怎么定价还没想好，点击链接可注册，[sum4all](https://sum4all.site/key)，获取总结key。交流请加入[telegram频道 ](https://t.me/+w2Z8S0Y8H2IxZDI9)

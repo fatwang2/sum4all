@@ -33,7 +33,7 @@ EXTENSION_TO_TYPE = {
     desire_priority=2,
     hidden=True,
     desc="A plugin for summarizing all things",
-    version="0.2.14",
+    version="0.2.15",
     author="fatwang2",
 )
 
@@ -59,6 +59,7 @@ class sum4all(Plugin):
             self.search_prompt = conf.get("search_prompt","你是一个信息检索专家，请你用简单明了的语言，对你收到的内容做总结。尽量使用emoji让你的表达更生动")
             self.sum4all_key = conf.get("sum4all_key","")
             self.search_sum = conf.get("search_sum","")
+            self.file_sum = conf.get("file_sum","")
             self.perplexity_key = conf.get("perplexity_key","")
             self.search_service = conf.get("search_service","")            
             # 设置事件处理函数
@@ -89,8 +90,12 @@ class sum4all(Plugin):
             context.get("msg").prepare()
             file_path = context.content
             logger.info(f"on_handle_context: 获取到文件路径 {file_path}")
-            content = self.extract_content(file_path)  # 提取内容
-            self.handle_openai_file(content, e_context)
+            # 检查是否应该进行文件总结
+            if self.file_sum:
+                content = self.extract_content(file_path)  # 提取内容
+                self.handle_openai_file(content, e_context)
+            else:
+                logger.info("文件总结功能已禁用，不对文件内容进行处理")
         if context.type == ContextType.SHARING:  #匹配卡片分享
             if unsupported_urls:  #匹配不支持总结的卡片
                 if isgroup:  ##群聊中忽略
@@ -404,26 +409,37 @@ class sum4all(Plugin):
         reply.content = f"{content}"            
         e_context["reply"] = reply
         e_context.action = EventAction.BREAK_PASS
-    
     def get_help_text(self, **kwargs):
         help_text = "输入url/分享链接/搜索关键词，直接为你总结\n"
         return help_text
     def handle_openai_file(self, content, e_context):
         logger.info("handle_openai_file: 向OpenAI发送内容总结请求")
+        # 根据sum_service的值选择API密钥和基础URL
+        if self.sum_service == "openai":
+            api_key = self.open_ai_api_key
+            api_base = self.open_ai_api_base
+            model = self.model
+        elif self.sum_service == "sum4all":
+            api_key = self.sum4all_key
+            api_base = "https://pro.sum4all.site/v1"
+            model = "sum4all"
+        else:
+            logger.error(f"未知的sum_service配置: {self.sum_service}")
+            return
 
         headers = {
             'Content-Type': 'application/json',
-            'Authorization': f'Bearer {self.open_ai_api_key}'
+            'Authorization': f'Bearer {api_key}'
         }
         data = {
-            "model": self.model, 
+            "model": model, 
             "messages": [
                 {"role": "system", "content": self.prompt},
                 {"role": "user", "content": content}
             ]
         }
         try:
-            response = requests.post(f"{self.open_ai_api_base}/chat/completions", headers=headers, data=json.dumps(data))
+            response = requests.post(f"{api_base}/chat/completions", headers=headers, data=json.dumps(data))
             response.raise_for_status()
             response_data = response.json()
 
