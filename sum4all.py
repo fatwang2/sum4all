@@ -68,6 +68,7 @@ class sum4all(Plugin):
             self.sum4all_key = self.config.get("sum4all_key","")
             self.search_sum = self.config.get("search_sum","")
             self.file_sum = self.config.get("file_sum","")
+            self.image_sum = self.config.get("image_sum","")
             self.perplexity_key = self.config.get("perplexity_key","")
             self.search_service = self.config.get("search_service","")            
                 
@@ -102,7 +103,18 @@ class sum4all(Plugin):
                 self.handle_openai_file(content, e_context)
             else:
                 logger.info("文件总结功能已禁用，不对文件内容进行处理")
-        if context.type == ContextType.SHARING:  #匹配卡片分享
+        elif context.type == ContextType.IMAGE:
+            logger.info("on_handle_context: 处理上下文开始")
+            context.get("msg").prepare()
+            image_path = context.content
+            logger.info(f"on_handle_context: 获取到图片路径 {image_path}")
+            # 检查是否应该进行图片总结
+            if self.image_sum:
+                content = self.extract_content(image_path)  # 提取内容
+                self.handle_openai_image(content, e_context)
+            else:
+                logger.info("图片总结功能已禁用，不对图片内容进行处理")
+        elif context.type == ContextType.SHARING:  #匹配卡片分享
             if unsupported_urls:  #匹配不支持总结的卡片
                 if isgroup:  ##群聊中忽略
                     return

@@ -2,6 +2,7 @@
   "sum_service":"",
   "search_sum": false,
   "file_sum": false,
+  "image_sum": true,
   "search_service":"",
   "bibigpt_key": "",
   "sum4all_key": "",
