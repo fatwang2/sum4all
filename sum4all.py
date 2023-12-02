@@ -11,7 +11,7 @@ from common.log import logger
 @plugins.register(
     name="sum4all",
     desire_priority=2,
-    hidden=False,
+    hidden=True,
     desc="A plugin for summarizing all things",
     version="0.2.6",
     author="fatwang2",
