@@ -631,7 +631,7 @@ class sum4all(Plugin):
                     "content": [
                         {
                             "type": "text",
-                            "text": "图片讲了什么?"
+                            "text": "先全局分析图片的主要内容，并按照逻辑分层次、段落，提炼出5个左右图片中的精华信息、关键要点，生动地向读者描述图片的主要内容。注意排版、换行、emoji、标签的合理搭配，清楚地展现图片讲了什么。"
                         },
                         {
                             "type": "image_url",
@@ -669,6 +669,13 @@ class sum4all(Plugin):
 
         reply = Reply()
         reply.type = ReplyType.TEXT
-        reply.content = reply_content  # 设置响应内容到回复对象
+        reply.content = remove_markdown(reply_content)  # 设置响应内容到回复对象
         e_context["reply"] = reply
         e_context.action = EventAction.BREAK_PASS
+        
+def remove_markdown(text):
+    # 替换Markdown的粗体标记
+    text = text.replace("**", "")
+    # 替换Markdown的标题标记
+    text = text.replace("### ", "").replace("## ", "").replace("# ", "")
+    return text
