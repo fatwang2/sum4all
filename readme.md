@@ -78,7 +78,7 @@
 各参数含义如下：
 ```
 "sum_service":"", #内容总结服务，openai、sum4all、bibigpt、opensum
-"search_sum":"", #搜索开关，默认不开启，开启需改为 true
+"search_sum":"", #搜索开关，默认不开启，开启需改为 true，在微信端使用时，需要以“搜”字开头才会触发
 "file_sum": false, #文件总结开关，默认不开启，开启需改为 true，目前支持sum_service为openai和sum4all
 "image_sum": false, #图片总结开关，默认不开启，开启需改为 true，目前支持sum_service为为openai
 "search_service":"", #搜索服务，目前支持sum_service为sum4all和perplexity
