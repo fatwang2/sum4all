@@ -33,7 +33,7 @@ EXTENSION_TO_TYPE = {
     name="sum4all",
     desire_priority=2,
     desc="A plugin for summarizing all things",
-    version="0.4.0",
+    version="0.4.1",
     author="fatwang2",
 )
 
@@ -642,7 +642,7 @@ class sum4all(Plugin):
                     ]
                 }
             ],
-            "max_tokens": 300
+            "max_tokens": 3000
         }
 
         try:
