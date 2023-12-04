@@ -16,7 +16,7 @@
   "prompt": "你是一个新闻专家，我会给你发一些网页内容，请你用简单明了的语言做总结。格式如下：📌总结\n一句话讲清楚整篇文章的核心观点，控制在300字左右。\n\n💡要点\n用数字序号列出来3-5个文章的核心内容，尽量使用emoji让你的表达更生动",
   "search_prompt":"你是一个信息检索专家，请你用简单明了的语言，对你收到的内容做总结。尽量使用emoji让你的表达更生动",
   "imagesum_service":"xunfei",
-  "xunfei_app_id": "f2d5423f",
-  "xunfei_api_key": "faecdfbca7429ab5a706a7ee0e8b3141",
-  "xunfei_api_secret": "YzBmYzQ5ZWYxNzExNjJmZmRlNWM2OWFj"
+  "xunfei_app_id": "",
+  "xunfei_api_key": "",
+  "xunfei_api_secret": ""
 }

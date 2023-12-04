@@ -2,6 +2,7 @@
 [telegram频道 ](https://t.me/+w2Z8S0Y8H2IxZDI9)
 
 ## 更新日志
+- V0.4.1，20231203，调整图片总结功能的最大token为3000，避免截断
 - V0.4.0，20231203，支持图片总结功能，png、jpeg、jpg等，需更新配置文件
 - V0.3.4，20231202，修复插件配置更新问题，已支持插件更新后通过reloadp重新加载生效
 - V0.3.0，20231202，支持文件总结功能，常见pdf、doc、markdown、txt、xls、csv、html、ppt格式均支持，需安装requirements.txt依赖，更新配置文件
@@ -64,7 +65,7 @@
 | 服务 | 支持功能 | 特点 | 注册地址 | 图片介绍 |
 |------|----------|------|----------|-----------|
 | OpenAI | 文件、图片、绝大部分网页文章 | 无需额外申请服务，舍得花钱的话，效果最可控 | [OpenAI](https://platform.openai.com/account/api-keys) \| [LinkAI代理](https://sum4all.site/linkai) | ![OpenAI](picture/openai.png) |
-| Sum4all | 搜索、文件、绝大部分网页文章 | 注册免费送10万token，邀请好友注册再各得5万，觉得好用的还可以注册Poe上的同名机器人 | [sum4all](https://sum4all.site/key) \| [Poe Sum4all机器人](https://sum4all.site/poe) | ![Sum4all](picture/sum4all.png) |
+| Sum4all | 搜索、文件、绝大部分网页文章 | 注册免费送1万token，邀请好友注册再各得5k，觉得好用的还可以注册Poe上的同名机器人 | [sum4all](https://sum4all.site/key) \| [Poe Sum4all机器人](https://sum4all.site/poe) | ![Sum4all](picture/sum4all.png) |
 | Perplexity | 搜索 | 国外的搜索总结服务，速度快，价格贵，自带大模型，需自行注册和付费 | [Perplexity](https://sum4all.site/perplexity) | ![Perplexity](picture/p.png) | ![Alt text](picture/WX20231201-004639@2x.png) |
 | BibiGPT | 文章、视频、音频 | 注册免费享有60min时长 | [BibiGPT](https://sum4all.site/bibigpt) | ![BibiGPT](picture/image-3.png) |
 | OpenSum | 微信、头条、即刻等平台网页文章 | 19元30万字 | [OpenSum](https://sum4all.site/opensum) | ![OpenSum](picture/opensum.png) |
@@ -77,7 +78,7 @@
 各参数含义如下：
 ```
 "sum_service":"", #内容总结服务，openai、sum4all、bibigpt、opensum
-"search_sum":"", #搜索开关，默认不开启，开启需改为 true
+"search_sum":"", #搜索开关，默认不开启，开启需改为 true，在微信端使用时，需要以“搜”字开头才会触发
 "file_sum": false, #文件总结开关，默认不开启，开启需改为 true，目前支持sum_service为openai和sum4all
 "image_sum": false, #图片总结开关，默认不开启，开启需改为 true，目前支持sum_service为为openai
 "search_service":"", #搜索服务，目前支持sum_service为sum4all和perplexity

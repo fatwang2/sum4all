@@ -50,9 +50,11 @@ text =[{"role": "user", "content": "", "content_type":"image"}]
     name="sum4all",
     desire_priority=2,
     desc="A plugin for summarizing all things",
-    version="0.4.0",
+    version="0.4.1",
     author="fatwang2",
 )
+
+
 
 
 
@@ -68,7 +70,7 @@ class sum4all(Plugin):
             else:
                 # 使用父类的方法来加载配置
                 self.config = super().load_config()
-                
+
                 if not self.config:
                     raise Exception("config.json not found")
             # 设置事件处理函数
@@ -89,7 +91,7 @@ class sum4all(Plugin):
             self.file_sum = self.config.get("file_sum","")
             self.image_sum = self.config.get("image_sum","")
             self.perplexity_key = self.config.get("perplexity_key","")
-            self.search_service = self.config.get("search_service","")            
+            self.search_service = self.config.get("search_service","")
             self.imagesum_service = self.config.get("imagesum_service","")
             self.xunfei_app_id = self.config.get("xunfei_app_id","")
             self.xunfei_api_key = self.config.get("xunfei_api_key","")
@@ -195,7 +197,7 @@ class sum4all(Plugin):
                 self.handle_opensum(content, e_context)
             elif self.sum_service == "sum4all":
                 self.handle_sum4all(content, e_context)
-    
+
     def short_url(self, long_url):
         url = "https://short.fatwang2.com"
         payload = {
@@ -426,13 +428,13 @@ class sum4all(Plugin):
         e_context["reply"] = reply
         e_context.action = EventAction.BREAK_PASS
     def handle_perplexity(self, content, e_context):
-        
+
         headers = {
             'Content-Type': 'application/json',
             'Authorization': f'Bearer {self.perplexity_key}'
         }
         data = {
-            "model": "pplx-7b-online", 
+            "model": "pplx-7b-online",
             "messages": [
                 {"role": "system", "content": self.search_prompt},
                 {"role": "user", "content": content}
@@ -459,7 +461,7 @@ class sum4all(Plugin):
             logger.error(f"Error calling perplexity: {e}")
         reply = Reply()
         reply.type = ReplyType.TEXT
-        reply.content = f"{content}"            
+        reply.content = f"{content}"
         e_context["reply"] = reply
         e_context.action = EventAction.BREAK_PASS
     def get_help_text(self, **kwargs):
@@ -485,7 +487,7 @@ class sum4all(Plugin):
             'Authorization': f'Bearer {api_key}'
         }
         data = {
-            "model": model, 
+            "model": model,
             "messages": [
                 {"role": "system", "content": self.prompt},
                 {"role": "user", "content": content}
@@ -610,10 +612,10 @@ class sum4all(Plugin):
         return segments
     def extract_content(self, file_path):
         logger.info(f"extract_content: 提取文件内容，文件路径: {file_path}")
-    
+
         file_extension = os.path.splitext(file_path)[1][1:].lower()
         logger.info(f"extract_content: 文件类型为 {file_extension}")
-    
+
         file_type = EXTENSION_TO_TYPE.get(file_extension)
 
         if not file_type:
@@ -636,7 +638,7 @@ class sum4all(Plugin):
             return None
         logger.info("extract_content: 文件内容提取完成")
         return read_func(file_path)
-    
+
     # Function to handle OpenAI image processing
     def handle_openai_image(self, image_path, e_context):
         logger.info("handle_openai_image_response: 解析OpenAI图像处理API的响应")
@@ -660,7 +662,7 @@ class sum4all(Plugin):
                     "content": [
                         {
                             "type": "text",
-                            "text": "图片讲了什么?"
+                            "text": "先全局分析图片的主要内容，并按照逻辑分层次、段落，提炼出5个左右图片中的精华信息、关键要点，生动地向读者描述图片的主要内容。注意排版、换行、emoji、标签的合理搭配，清楚地展现图片讲了什么。"
                         },
                         {
                             "type": "image_url",
@@ -671,7 +673,7 @@ class sum4all(Plugin):
                     ]
                 }
             ],
-            "max_tokens": 300
+            "max_tokens": 3000
         }
 
         try:
@@ -698,7 +700,7 @@ class sum4all(Plugin):
 
         reply = Reply()
         reply.type = ReplyType.TEXT
-        reply.content = reply_content  # 设置响应内容到回复对象
+        reply.content = remove_markdown(reply_content)  # 设置响应内容到回复对象
         e_context["reply"] = reply
         e_context.action = EventAction.BREAK_PASS
 
@@ -713,7 +715,7 @@ class sum4all(Plugin):
         ws.appid = self.xunfei_app_id
         ws.imagedata = open(image_path,"rb").read()
         text = [{"role": "user", "content": str(base64.b64encode(ws.imagedata), 'utf-8'), "content_type": "image"}]
-        ws.question = self.checklen(self.getText("user","描述图片的内容并且根据图片内容进行推理分析,长度大概300字"))
+        ws.question = self.checklen(self.getText("user","先全局分析图片的主要内容，并按照逻辑分层次、段落，提炼出5个左右图片中的精华信息、关键要点，生动地向读者描述图片的主要内容。注意排版、换行、emoji、标签的合理搭配，清楚地展现图片讲了什么。"))
         ws.run_forever(sslopt={"cert_reqs": ssl.CERT_NONE})
 
 
@@ -757,7 +759,7 @@ class sum4all(Plugin):
         reply.type = ReplyType.TEXT
         logger.error(f"Error processing XunFei Image API response: {error}")
         reply_content = f"An error occurred while processing XunFei Image API response: {error}"
-        reply.content = reply_content
+        reply.content = remove_markdown(reply_content)  # 设置响应内容到回复对象
         e_context["reply"] = reply
         e_context.action = EventAction.BREAK_PASS
 
@@ -786,7 +788,7 @@ class sum4all(Plugin):
             logger.error(f'[XunFei IMage] 请求错误: {code}, {data}')
             reply = Reply()
             reply.type = ReplyType.TEXT
-            reply.content = message  # 设置响应内容到回复对象
+            reply.content = remove_markdown(message)  # 设置响应内容到回复对象
             e_context["reply"] = reply
             e_context.action = EventAction.BREAK_PASS
             ws.close()
@@ -801,7 +803,7 @@ class sum4all(Plugin):
                 logger.info("XunFei Image API response content")  # 记录响应内容
                 reply = Reply()
                 reply.type = ReplyType.TEXT
-                reply.content = self.ws_answer  # 设置响应内容到回复对象
+                reply.content = remove_markdown(self.ws_answer)    # 设置响应内容到回复对象
                 e_context["reply"] = reply
                 e_context.action = EventAction.BREAK_PASS
                 ws.close()
@@ -855,3 +857,10 @@ class sum4all(Plugin):
         while (self.getlength(text[1:])> 8000):
             del text[1]
         return text
+
+def remove_markdown(text):
+    # 替换Markdown的粗体标记
+    text = text.replace("**", "")
+    # 替换Markdown的标题标记
+    text = text.replace("### ", "").replace("## ", "").replace("# ", "")
+    return text
