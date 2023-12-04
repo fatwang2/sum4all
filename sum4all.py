@@ -796,7 +796,7 @@ class sum4all(Plugin):
             choices = data["payload"]["choices"]
             status = choices["status"]
             content = choices["text"][0]["content"]
-            logger.info(f"[XunFei IMage]content={content}")
+            #logger.info(f"[XunFei IMage]content={content}")
             self.ws_answer += content
             # print(1)
             if status == 2:
