@@ -17,6 +17,21 @@ import csv
 from bs4 import BeautifulSoup
 from pptx import Presentation
 import base64
+from urllib.parse import urlparse
+from wsgiref.handlers import format_date_time
+
+import _thread as thread
+import datetime
+import hashlib
+import hmac
+import json
+from urllib.parse import urlparse
+import ssl
+from datetime import datetime
+from time import mktime
+from urllib.parse import urlencode
+from wsgiref.handlers import format_date_time
+import websocket  # 使用websocket_client
 
 EXTENSION_TO_TYPE = {
     'pdf': 'pdf',
@@ -28,6 +43,8 @@ EXTENSION_TO_TYPE = {
     'html': 'html', 'htm': 'html',
     'ppt': 'ppt', 'pptx': 'ppt'
 }
+imageunderstanding_url = "wss://spark-api.cn-huabei-1.xf-yun.com/v2.1/image"#云端环境的服务地址
+text =[{"role": "user", "content": "", "content_type":"image"}]
 
 @plugins.register(
     name="sum4all",
@@ -36,6 +53,9 @@ EXTENSION_TO_TYPE = {
     version="0.4.1",
     author="fatwang2",
 )
+
+
+
 
 
 class sum4all(Plugin):
@@ -50,7 +70,7 @@ class sum4all(Plugin):
             else:
                 # 使用父类的方法来加载配置
                 self.config = super().load_config()
-                
+
                 if not self.config:
                     raise Exception("config.json not found")
             # 设置事件处理函数
@@ -64,15 +84,23 @@ class sum4all(Plugin):
             self.open_ai_api_key = self.config.get("open_ai_api_key","")
             self.model = self.config.get("model","gpt-3.5-turbo")
             self.open_ai_api_base = self.config.get("open_ai_api_base","https://api.openai.com/v1")
-            self.prompt = self.config.get("prompt","你是一个新闻专家，我会给你发一些网页内容，请你用简单明了的语言做总结。格式如下：📌总结\n一句话讲清楚整篇文章的核心观点，控制在30字左右。\n\n💡要点\n用数字序号列出来3-5个文章的核心内容，尽量使用emoji让你的表达更生动，请注意输出的内容不要有两个转义符")
+            self.prompt = self.config.get("prompt","你是一个新闻专家，我会给你发一些网页内容，请你用简单明了的语言做总结。格式如下：📌总结\n一句话讲清楚整篇文章的核心观点，控制在300字左右。\n\n💡要点\n用数字序号列出来3-5个文章的核心内容，尽量使用emoji让你的表达更生动，请注意输出的内容不要有两个转义符")
             self.search_prompt = self.config.get("search_prompt","你是一个信息检索专家，请你用简单明了的语言，对你收到的内容做总结。尽量使用emoji让你的表达更生动")
             self.sum4all_key = self.config.get("sum4all_key","")
             self.search_sum = self.config.get("search_sum","")
             self.file_sum = self.config.get("file_sum","")
             self.image_sum = self.config.get("image_sum","")
             self.perplexity_key = self.config.get("perplexity_key","")
-            self.search_service = self.config.get("search_service","")            
-                
+            self.search_service = self.config.get("search_service","")
+            self.imagesum_service = self.config.get("imagesum_service","")
+            self.xunfei_app_id = self.config.get("xunfei_app_id","")
+            self.xunfei_api_key = self.config.get("xunfei_api_key","")
+            self.xunfei_api_secret = self.config.get("xunfei_api_secret","")
+            self.host = urlparse(imageunderstanding_url).netloc
+            self.path = urlparse(imageunderstanding_url).path
+            self.ImageUnderstanding_url = imageunderstanding_url
+            self.ws_context = dict()
+            self.ws_answer = ""
             # 初始化成功日志
             logger.info("[sum4all] inited.")
         except Exception as e:
@@ -114,7 +142,10 @@ class sum4all(Plugin):
             logger.info(f"on_handle_context: 获取到图片路径 {image_path}")
             # 检查是否应该进行图片总结
             if self.image_sum:
-                self.handle_openai_image(image_path, e_context)
+                if self.imagesum_service == "xunfei":
+                    self.handle_Xunfei_image(image_path, e_context)
+                else:
+                    self.handle_openai_image(image_path, e_context)
             else:
                 logger.info("图片总结功能已禁用，不对图片内容进行处理")
                 # 删除图片
@@ -166,7 +197,7 @@ class sum4all(Plugin):
                 self.handle_opensum(content, e_context)
             elif self.sum_service == "sum4all":
                 self.handle_sum4all(content, e_context)
-    
+
     def short_url(self, long_url):
         url = "https://short.fatwang2.com"
         payload = {
@@ -397,13 +428,13 @@ class sum4all(Plugin):
         e_context["reply"] = reply
         e_context.action = EventAction.BREAK_PASS
     def handle_perplexity(self, content, e_context):
-        
+
         headers = {
             'Content-Type': 'application/json',
             'Authorization': f'Bearer {self.perplexity_key}'
         }
         data = {
-            "model": "pplx-7b-online", 
+            "model": "pplx-7b-online",
             "messages": [
                 {"role": "system", "content": self.search_prompt},
                 {"role": "user", "content": content}
@@ -430,7 +461,7 @@ class sum4all(Plugin):
             logger.error(f"Error calling perplexity: {e}")
         reply = Reply()
         reply.type = ReplyType.TEXT
-        reply.content = f"{content}"            
+        reply.content = f"{content}"
         e_context["reply"] = reply
         e_context.action = EventAction.BREAK_PASS
     def get_help_text(self, **kwargs):
@@ -456,7 +487,7 @@ class sum4all(Plugin):
             'Authorization': f'Bearer {api_key}'
         }
         data = {
-            "model": model, 
+            "model": model,
             "messages": [
                 {"role": "system", "content": self.prompt},
                 {"role": "user", "content": content}
@@ -581,10 +612,10 @@ class sum4all(Plugin):
         return segments
     def extract_content(self, file_path):
         logger.info(f"extract_content: 提取文件内容，文件路径: {file_path}")
-    
+
         file_extension = os.path.splitext(file_path)[1][1:].lower()
         logger.info(f"extract_content: 文件类型为 {file_extension}")
-    
+
         file_type = EXTENSION_TO_TYPE.get(file_extension)
 
         if not file_type:
@@ -607,7 +638,7 @@ class sum4all(Plugin):
             return None
         logger.info("extract_content: 文件内容提取完成")
         return read_func(file_path)
-    
+
     # Function to handle OpenAI image processing
     def handle_openai_image(self, image_path, e_context):
         logger.info("handle_openai_image_response: 解析OpenAI图像处理API的响应")
@@ -672,7 +703,161 @@ class sum4all(Plugin):
         reply.content = remove_markdown(reply_content)  # 设置响应内容到回复对象
         e_context["reply"] = reply
         e_context.action = EventAction.BREAK_PASS
-        
+
+    def handle_Xunfei_image(self, image_path, e_context):
+        global text
+        logger.info("handle_Xunfei_image_response: 解析讯飞图像处理API的响应")
+        websocket.enableTrace(False)
+        wsUrl = self.create_url()
+        self.ws_context = e_context
+
+        ws = websocket.WebSocketApp(wsUrl, on_message=self.on_message, on_error=self.on_error, on_close=self.on_close, on_open=self.on_open)
+        ws.appid = self.xunfei_app_id
+        ws.imagedata = open(image_path,"rb").read()
+        text = [{"role": "user", "content": str(base64.b64encode(ws.imagedata), 'utf-8'), "content_type": "image"}]
+        ws.question = self.checklen(self.getText("user","先全局分析图片的主要内容，并按照逻辑分层次、段落，提炼出5个左右图片中的精华信息、关键要点，生动地向读者描述图片的主要内容。注意排版、换行、emoji、标签的合理搭配，清楚地展现图片讲了什么。"))
+        ws.run_forever(sslopt={"cert_reqs": ssl.CERT_NONE})
+
+
+
+       # 生成url
+    def create_url(self):
+        # 生成RFC1123格式的时间戳
+        now = datetime.now()
+        date = format_date_time(mktime(now.timetuple()))
+
+        # 拼接字符串
+        signature_origin = "host: " + self.host + "\n"
+        signature_origin += "date: " + date + "\n"
+        signature_origin += "GET " + self.path + " HTTP/1.1"
+
+        # 进行hmac-sha256进行加密
+        signature_sha = hmac.new(self.xunfei_api_secret.encode('utf-8'), signature_origin.encode('utf-8'),
+                                 digestmod=hashlib.sha256).digest()
+
+        signature_sha_base64 = base64.b64encode(signature_sha).decode(encoding='utf-8')
+
+        authorization_origin = f'api_key="{self.xunfei_api_key}", algorithm="hmac-sha256", headers="host date request-line", signature="{signature_sha_base64}"'
+
+        authorization = base64.b64encode(authorization_origin.encode('utf-8')).decode(encoding='utf-8')
+
+        # 将请求的鉴权参数组合为字典
+        v = {
+            "authorization": authorization,
+            "date": date,
+            "host": self.host
+        }
+        # 拼接鉴权参数，生成url
+        url = self.ImageUnderstanding_url + '?' + urlencode(v)
+        # print(url)
+        # 此处打印出建立连接时候的url,参考本demo的时候可取消上方打印的注释，比对相同参数时生成的url与自己代码生成的url是否一致
+        return url
+
+    def on_error(self, ws, error):
+        e_context = self.ws_context
+        reply = Reply()
+        reply.type = ReplyType.TEXT
+        logger.error(f"Error processing XunFei Image API response: {error}")
+        reply_content = f"An error occurred while processing XunFei Image API response: {error}"
+        reply.content = remove_markdown(reply_content)  # 设置响应内容到回复对象
+        e_context["reply"] = reply
+        e_context.action = EventAction.BREAK_PASS
+
+
+    # 收到websocket关闭的处理
+    def on_close(self, ws, one, two):
+        print(" ")
+
+    # 收到websocket连接建立的处理
+    def on_open(self, ws):
+        logger.info(f"[XunFei Image] Start websocket")
+        thread.start_new_thread(self.run, (ws,))
+
+    def run(self, ws, *args):
+        data = json.dumps(self.gen_params(appid=ws.appid, question=ws.question))
+        ws.send(data)
+
+# 收到websocket消息的处理
+    def on_message(self, ws, message):
+        e_context = self.ws_context
+        # print(message)
+        data = json.loads(message)
+        code = data['header']['code']
+        message = data['header']['message']
+        if code != 0:
+            logger.error(f'[XunFei IMage] 请求错误: {code}, {data}')
+            reply = Reply()
+            reply.type = ReplyType.TEXT
+            reply.content = remove_markdown(message)  # 设置响应内容到回复对象
+            e_context["reply"] = reply
+            e_context.action = EventAction.BREAK_PASS
+            ws.close()
+        else:
+            choices = data["payload"]["choices"]
+            status = choices["status"]
+            content = choices["text"][0]["content"]
+            #logger.info(f"[XunFei IMage]content={content}")
+            self.ws_answer += content
+            # print(1)
+            if status == 2:
+                logger.info("XunFei Image API response content")  # 记录响应内容
+                reply = Reply()
+                reply.type = ReplyType.TEXT
+                reply.content = remove_markdown(self.ws_answer)    # 设置响应内容到回复对象
+                e_context["reply"] = reply
+                e_context.action = EventAction.BREAK_PASS
+                ws.close()
+                self.ws_answer = ""
+
+    def gen_params(self, appid, question):
+        """
+        通过appid和用户的提问来生成请参数
+        """
+
+        data = {
+            "header": {
+                "app_id": appid
+            },
+            "parameter": {
+                "chat": {
+                    "domain": "image",
+                    "temperature": 0.5,
+                    "top_k": 4,
+                    "max_tokens": 2028,
+                    "auditing": "default"
+                }
+            },
+            "payload": {
+                "message": {
+                    "text": question
+                }
+            }
+        }
+
+        return data
+    def getText(self, role, content):
+        jsoncon = {}
+        jsoncon["role"] = role
+        jsoncon["content"] = content
+        text.append(jsoncon)
+        return text
+
+
+    def getlength(self, text):
+        length = 0
+        for content in text:
+            temp = content["content"]
+            leng = len(temp)
+            length += leng
+        return length
+
+
+    def checklen(self, text):
+        #print("text-content-tokens:", getlength(text[1:]))
+        while (self.getlength(text[1:])> 8000):
+            del text[1]
+        return text
+
 def remove_markdown(text):
     # 替换Markdown的粗体标记
     text = text.replace("**", "")
