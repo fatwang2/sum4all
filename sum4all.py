@@ -50,11 +50,9 @@ text =[{"role": "user", "content": "", "content_type":"image"}]
     name="sum4all",
     desire_priority=2,
     desc="A plugin for summarizing all things",
-    version="0.4.1",
+    version="0.5.0",
     author="fatwang2",
 )
-
-
 
 
 
@@ -84,7 +82,7 @@ class sum4all(Plugin):
             self.open_ai_api_key = self.config.get("open_ai_api_key","")
             self.model = self.config.get("model","gpt-3.5-turbo")
             self.open_ai_api_base = self.config.get("open_ai_api_base","https://api.openai.com/v1")
-            self.prompt = self.config.get("prompt","你是一个新闻专家，我会给你发一些网页内容，请你用简单明了的语言做总结。格式如下：📌总结\n一句话讲清楚整篇文章的核心观点，控制在300字左右。\n\n💡要点\n用数字序号列出来3-5个文章的核心内容，尽量使用emoji让你的表达更生动，请注意输出的内容不要有两个转义符")
+            self.prompt = self.config.get("prompt","你是一个新闻专家，我会给你发一些网页内容，请你用简单明了的语言做总结。格式如下：📌总结\n一句话讲清楚整篇文章的核心观点，控制在30字左右。\n\n💡要点\n用数字序号列出来3-5个文章的核心内容，尽量使用emoji让你的表达更生动，请注意输出的内容不要有两个转义符")
             self.search_prompt = self.config.get("search_prompt","你是一个信息检索专家，请你用简单明了的语言，对你收到的内容做总结。尽量使用emoji让你的表达更生动")
             self.sum4all_key = self.config.get("sum4all_key","")
             self.search_sum = self.config.get("search_sum","")
@@ -92,10 +90,11 @@ class sum4all(Plugin):
             self.image_sum = self.config.get("image_sum","")
             self.perplexity_key = self.config.get("perplexity_key","")
             self.search_service = self.config.get("search_service","")
-            self.imagesum_service = self.config.get("imagesum_service","")
+            self.image_service = self.config.get("image_service","")
             self.xunfei_app_id = self.config.get("xunfei_app_id","")
             self.xunfei_api_key = self.config.get("xunfei_api_key","")
             self.xunfei_api_secret = self.config.get("xunfei_api_secret","")
+
             self.host = urlparse(imageunderstanding_url).netloc
             self.path = urlparse(imageunderstanding_url).path
             self.ImageUnderstanding_url = imageunderstanding_url
@@ -142,8 +141,8 @@ class sum4all(Plugin):
             logger.info(f"on_handle_context: 获取到图片路径 {image_path}")
             # 检查是否应该进行图片总结
             if self.image_sum:
-                if self.imagesum_service == "xunfei":
-                    self.handle_Xunfei_image(image_path, e_context)
+                if self.image_service == "xunfei":
+                    self.handle_xunfei_image(image_path, e_context)
                 else:
                     self.handle_openai_image(image_path, e_context)
             else:
@@ -704,9 +703,9 @@ class sum4all(Plugin):
         e_context["reply"] = reply
         e_context.action = EventAction.BREAK_PASS
 
-    def handle_Xunfei_image(self, image_path, e_context):
+    def handle_xunfei_image(self, image_path, e_context):
         global text
-        logger.info("handle_Xunfei_image_response: 解析讯飞图像处理API的响应")
+        logger.info("handle_xunfei_image_response: 解析讯飞图像处理API的响应")
         websocket.enableTrace(False)
         wsUrl = self.create_url()
         self.ws_context = e_context
