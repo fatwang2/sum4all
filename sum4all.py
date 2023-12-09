@@ -136,7 +136,7 @@ class sum4all(Plugin):
                 logger.info('Added new user to params_cache.')
 
             self.params_cache[user_id]['prompt'] = new_content
-            logger.info('Updated prompt in params_cache for user.')
+            logger.info('params_cache for user: %s', self.params_cache[user_id])    
 
             # 如果存在最近一次处理的图片路径，触发handle_openai_image函数
             if 'last_image_path' in self.params_cache[user_id]:
@@ -170,6 +170,11 @@ class sum4all(Plugin):
             context.get("msg").prepare()
             image_path = context.content
             logger.info(f"on_handle_context: 获取到图片路径 {image_path}")
+            # 更新params_cache中的last_image_path
+            if user_id not in self.params_cache:
+                self.params_cache[user_id] = {}
+            self.params_cache[user_id]['last_image_path'] = image_path
+            logger.info('Updated last_image_path in params_cache for user.')
             # 检查是否应该进行图片总结
             if self.image_sum:
                 if self.image_service == "xunfei":
