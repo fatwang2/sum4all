@@ -126,15 +126,23 @@ class sum4all(Plugin):
             self.call_service(content, e_context, "search")
             return
         if content.startswith(self.qa_prefix):
+            logger.info('Content starts with the qa_prefix.')
+
             # 去除关键词和紧随其后的空格
             new_content = content[len(self.qa_prefix):]
             # 将用户的问题存储在params_cache中
             if user_id not in self.params_cache:
                 self.params_cache[user_id] = {}
+                logger.info('Added new user to params_cache.')
+
             self.params_cache[user_id]['prompt'] = new_content
+            logger.info('Updated prompt in params_cache for user.')
+
             # 如果存在最近一次处理的图片路径，触发handle_openai_image函数
             if 'last_image_path' in self.params_cache[user_id]:
+                logger.info('Last image path found in params_cache for user.')
                 self.handle_openai_image(self.params_cache[user_id]['last_image_path'], e_context)
+            return
         if context.type == ContextType.FILE:
             if isgroup and not self.group_sharing:
                 # 群聊中忽略处理文件
