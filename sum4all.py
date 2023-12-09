@@ -7,7 +7,7 @@ from bridge.context import ContextType
 from channel.chat_message import ChatMessage
 from plugins import *
 from common.log import logger
-from expiringdict import ExpiredDict
+from common.expired_dict import ExpiredDict
 import os
 from docx import Document
 import markdown
