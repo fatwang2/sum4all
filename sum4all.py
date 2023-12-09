@@ -97,8 +97,8 @@ class sum4all(Plugin):
             self.xunfei_app_id = self.config.get("xunfei_app_id","")
             self.xunfei_api_key = self.config.get("xunfei_api_key","")
             self.xunfei_api_secret = self.config.get("xunfei_api_secret","")
-            self.qa_prefix = self.config.get("qa_prefix","")
-            self.search_prefix = self.config.get("search_prefix","")
+            self.qa_prefix = self.config.get("qa_prefix","问")
+            self.search_prefix = self.config.get("search_prefix","搜")
             self.params_cache = ExpiredDict(300)
             self.host = urlparse(imageunderstanding_url).netloc
             self.path = urlparse(imageunderstanding_url).path
