@@ -654,7 +654,8 @@ class sum4all(Plugin):
                 return base64.b64encode(image_file.read()).decode('utf-8')
         # Getting the base64 string
         base64_image = encode_image(image_path)
-        user_id = e_context.get("user_id")
+        msg: ChatMessage = e_context["context"]["msg"]
+        user_id = msg.from_user_id
         prompt = self.params_cache[user_id].get('prompt', '先全局分析图片的主要内容，并按照逻辑分层次、段落，提炼出5个左右图片中的精华信息、关键要点，生动地向读者描述图片的主要内容。注意排版、换行、emoji、标签的合理搭配，清楚地展现图片讲了什么')
 
         headers = {
