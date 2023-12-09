@@ -3,6 +3,7 @@
   "search_sum": false,
   "file_sum": false,
   "image_sum": false,
+  "qa_prefix":"提问",
   "search_service":"sum4all",
   "image_service":"xunfei",
   "bibigpt_key": "",

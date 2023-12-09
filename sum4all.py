@@ -4,8 +4,10 @@ import re
 import plugins
 from bridge.reply import Reply, ReplyType
 from bridge.context import ContextType
+from channel.chat_message import ChatMessage
 from plugins import *
 from common.log import logger
+from expiringdict import ExpiredDict
 import os
 from docx import Document
 import markdown
@@ -50,7 +52,7 @@ text =[{"role": "user", "content": "", "content_type":"image"}]
     name="sum4all",
     desire_priority=2,
     desc="A plugin for summarizing all things",
-    version="0.5.1",
+    version="0.5.2",
     author="fatwang2",
 )
 
@@ -94,7 +96,8 @@ class sum4all(Plugin):
             self.xunfei_app_id = self.config.get("xunfei_app_id","")
             self.xunfei_api_key = self.config.get("xunfei_api_key","")
             self.xunfei_api_secret = self.config.get("xunfei_api_secret","")
-
+            self.qa_prefix = self.config.get("qa_prefix","")
+            self.params_cache = ExpiredDict(300)
             self.host = urlparse(imageunderstanding_url).netloc
             self.path = urlparse(imageunderstanding_url).path
             self.ImageUnderstanding_url = imageunderstanding_url
@@ -109,6 +112,8 @@ class sum4all(Plugin):
         context = e_context["context"]
         if context.type not in [ContextType.TEXT, ContextType.SHARING,ContextType.FILE,ContextType.IMAGE]:
             return
+        msg: ChatMessage = e_context["context"]["msg"]
+        user_id = msg.from_user_id
         content = context.content
         isgroup = e_context["context"].get("isgroup", False)
 
@@ -120,6 +125,16 @@ class sum4all(Plugin):
             # Call new function to handle search operation
             self.call_service(content, e_context, "search")
             return
+        if content.startswith(self.qa_prefix):
+            # 去除关键词和紧随其后的空格
+            new_content = content[len(self.qa_prefix):]
+            # 将用户的问题存储在params_cache中
+            if user_id not in self.params_cache:
+                self.params_cache[user_id] = {}
+            self.params_cache[user_id]['prompt'] = new_content
+            # 如果存在最近一次处理的图片路径，触发handle_openai_image函数
+            if 'last_image_path' in self.params_cache[user_id]:
+                self.handle_openai_image(self.params_cache[user_id]['last_image_path'], e_context)
         if context.type == ContextType.FILE:
             if isgroup and not self.group_sharing:
                 # 群聊中忽略处理文件
@@ -155,9 +170,6 @@ class sum4all(Plugin):
                     self.handle_openai_image(image_path, e_context)
             else:
                 logger.info("图片总结功能已禁用，不对图片内容进行处理")
-                # 删除图片
-            os.remove(image_path)
-            logger.info(f"图片 {image_path} 已删除")
         elif context.type == ContextType.SHARING:  #匹配卡片分享
             if unsupported_urls:  #匹配不支持总结的卡片
                 if isgroup:  ##群聊中忽略
@@ -204,7 +216,8 @@ class sum4all(Plugin):
                 self.handle_opensum(content, e_context)
             elif self.sum_service == "sum4all":
                 self.handle_sum4all(content, e_context)
-
+        
+    
     def short_url(self, long_url):
         url = "https://short.fatwang2.com"
         payload = {
@@ -353,8 +366,6 @@ class sum4all(Plugin):
 
         e_context["reply"] = reply
         e_context.action = EventAction.BREAK_PASS
-
-
     def handle_opensum(self, content, e_context):
         headers = {
             'Content-Type': 'application/json',
@@ -528,8 +539,6 @@ class sum4all(Plugin):
         reply.content = reply_content  # 设置响应内容到回复对象
         e_context["reply"] = reply
         e_context.action = EventAction.BREAK_PASS
-
-
     def read_pdf(self, file_path):
         logger.info(f"开始读取PDF文件：{file_path}")
         doc = fitz.open(file_path)
@@ -537,16 +546,13 @@ class sum4all(Plugin):
         logger.info(f"PDF文件读取完成：{file_path}")
 
         return content
-
     def read_word(self, file_path):
         doc = Document(file_path)
         return ' '.join([p.text for p in doc.paragraphs])
-
     def read_markdown(self, file_path):
         with open(file_path, 'r', encoding='utf-8') as file:
             md_content = file.read()
             return markdown.markdown(md_content)
-
     def read_excel(self, file_path):
         workbook = load_workbook(file_path)
         content = ''
@@ -555,7 +561,6 @@ class sum4all(Plugin):
                 content += ' '.join([str(cell.value) for cell in row])
                 content += '\n'
         return content
-
     def read_txt(self, file_path):
         logger.debug(f"开始读取TXT文件: {file_path}")
         try:
@@ -568,7 +573,6 @@ class sum4all(Plugin):
         except Exception as e:
             logger.error(f"读取TXT文件时出错: {file_path}，错误信息: {str(e)}")
             return ""
-
     def read_csv(self, file_path):
         content = ''
         with open(file_path, 'r', encoding='utf-8') as csvfile:
@@ -576,7 +580,6 @@ class sum4all(Plugin):
             for row in reader:
                 content += ' '.join(row) + '\n'
         return content
-
     def num_tokens_from_string(self, text):
         try:
             encoding = tiktoken.encoding_for_model("gpt-3.5-turbo")
@@ -584,12 +587,10 @@ class sum4all(Plugin):
             logger.debug(f"Warning: model not found. Using cl100k_base encoding.")
             encoding = tiktoken.get_encoding("cl100k_base")
         return len(encoding.encode(text))
-
     def read_html(self, file_path):
         with open(file_path, 'r', encoding='utf-8') as file:
             soup = BeautifulSoup(file, 'html.parser')
             return soup.get_text()
-
     def read_ppt(self, file_path):
         presentation = Presentation(file_path)
         content = ''
@@ -598,7 +599,6 @@ class sum4all(Plugin):
                 if hasattr(shape, "text"):
                     content += shape.text + '\n'
         return content
-
     def split_text_chinese(self, text, overlap_tokens=500):
         tokens = jieba.cut(text)
         segments = []
@@ -645,7 +645,6 @@ class sum4all(Plugin):
             return None
         logger.info("extract_content: 文件内容提取完成")
         return read_func(file_path)
-
     # Function to handle OpenAI image processing
     def handle_openai_image(self, image_path, e_context):
         logger.info("handle_openai_image_response: 解析OpenAI图像处理API的响应")
@@ -655,6 +654,8 @@ class sum4all(Plugin):
                 return base64.b64encode(image_file.read()).decode('utf-8')
         # Getting the base64 string
         base64_image = encode_image(image_path)
+        user_id = e_context.get("user_id")
+        prompt = self.params_cache[user_id].get('prompt', '先全局分析图片的主要内容，并按照逻辑分层次、段落，提炼出5个左右图片中的精华信息、关键要点，生动地向读者描述图片的主要内容。注意排版、换行、emoji、标签的合理搭配，清楚地展现图片讲了什么')
 
         headers = {
             "Content-Type": "application/json",
@@ -669,7 +670,7 @@ class sum4all(Plugin):
                     "content": [
                         {
                             "type": "text",
-                            "text": "先全局分析图片的主要内容，并按照逻辑分层次、段落，提炼出5个左右图片中的精华信息、关键要点，生动地向读者描述图片的主要内容。注意排版、换行、emoji、标签的合理搭配，清楚地展现图片讲了什么。"
+                            "text": prompt
                         },
                         {
                             "type": "image_url",
