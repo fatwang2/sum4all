@@ -9,6 +9,7 @@ from plugins import *
 from common.log import logger
 from common.expired_dict import ExpiredDict
 import os
+import threading
 from docx import Document
 import markdown
 import tiktoken
@@ -52,7 +53,7 @@ text =[{"role": "user", "content": "", "content_type":"image"}]
     name="sum4all",
     desire_priority=2,
     desc="A plugin for summarizing all things",
-    version="0.5.4",
+    version="0.5.5",
     author="fatwang2",
 )
 
@@ -108,6 +109,10 @@ class sum4all(Plugin):
         except Exception as e:
             # 初始化失败日志
             logger.warn(f"sum4all init failed: {e}")
+    def remove_image_file(self, image_path):
+        if os.path.exists(image_path):
+            os.remove(image_path)
+            logger.info('Removed image file: %s', image_path)   
     def on_handle_context(self, e_context: EventContext):
         context = e_context["context"]
         if context.type not in [ContextType.TEXT, ContextType.SHARING,ContextType.FILE,ContextType.IMAGE]:
@@ -138,11 +143,15 @@ class sum4all(Plugin):
             self.params_cache[user_id]['prompt'] = new_content
             logger.info('params_cache for user: %s', self.params_cache[user_id])    
 
-            # 如果存在最近一次处理的图片路径，触发handle_openai_image函数
+            # 如果存在最近一次处理的图片路径，触发图片理解函数
             if 'last_image_path' in self.params_cache[user_id]:
-                logger.info('Last image path found in params_cache for user.')
-                self.handle_openai_image(self.params_cache[user_id]['last_image_path'], e_context)
-            return
+                logger.info('Last image path found in params_cache for user.')            
+                if self.image_service == "xunfei":
+                    self.handle_xunfei_image(self.params_cache[user_id]['last_image_path'], e_context)
+                else:
+                    self.handle_openai_image(self.params_cache[user_id]['last_image_path'], e_context)
+            else:
+                logger.error('No last image path found in params_cache for user.')
         if context.type == ContextType.FILE:
             if isgroup and not self.group_sharing:
                 # 群聊中忽略处理文件
@@ -175,6 +184,9 @@ class sum4all(Plugin):
                 self.params_cache[user_id] = {}
             self.params_cache[user_id]['last_image_path'] = image_path
             logger.info('Updated last_image_path in params_cache for user.')
+            # 创建一个Timer，在5分钟后删除图片文件
+            timer = threading.Timer(5 * 60, self.remove_image_file, args=[image_path])
+            timer.start()
             # 检查是否应该进行图片总结
             if self.image_sum:
                 if self.image_service == "xunfei":
@@ -229,8 +241,8 @@ class sum4all(Plugin):
                 self.handle_opensum(content, e_context)
             elif self.sum_service == "sum4all":
                 self.handle_sum4all(content, e_context)
+ 
         
-    
     def short_url(self, long_url):
         url = "https://short.fatwang2.com"
         payload = {
@@ -733,12 +745,17 @@ class sum4all(Plugin):
         websocket.enableTrace(False)
         wsUrl = self.create_url()
         self.ws_context = e_context
+        msg: ChatMessage = e_context["context"]["msg"]
+        user_id = msg.from_user_id
+        user_params = self.params_cache.get(user_id, {})
+        prompt = user_params.get('prompt', '先全局分析图片的主要内容，并按照逻辑分层次、段落，提炼出5个左右图片中的精华信息、关键要点，生动地向读者描述图片的主要内容。注意排版、换行、emoji、标签的合理搭配，清楚地展现图片讲了什么')
+
 
         ws = websocket.WebSocketApp(wsUrl, on_message=self.on_message, on_error=self.on_error, on_close=self.on_close, on_open=self.on_open)
         ws.appid = self.xunfei_app_id
         ws.imagedata = open(image_path,"rb").read()
         text = [{"role": "user", "content": str(base64.b64encode(ws.imagedata), 'utf-8'), "content_type": "image"}]
-        ws.question = self.checklen(self.getText("user","先全局分析图片的主要内容，并按照逻辑分层次、段落，提炼出5个左右图片中的精华信息、关键要点，生动地向读者描述图片的主要内容。注意排版、换行、emoji、标签的合理搭配，清楚地展现图片讲了什么。"))
+        ws.question = self.checklen(self.getText("user",prompt))
         ws.run_forever(sslopt={"cert_reqs": ssl.CERT_NONE})
 
 
