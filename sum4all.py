@@ -52,7 +52,7 @@ text =[{"role": "user", "content": "", "content_type":"image"}]
     name="sum4all",
     desire_priority=2,
     desc="A plugin for summarizing all things",
-    version="0.5.3",
+    version="0.5.4",
     author="fatwang2",
 )
 
@@ -656,7 +656,8 @@ class sum4all(Plugin):
         base64_image = encode_image(image_path)
         msg: ChatMessage = e_context["context"]["msg"]
         user_id = msg.from_user_id
-        prompt = self.params_cache[user_id].get('prompt', '先全局分析图片的主要内容，并按照逻辑分层次、段落，提炼出5个左右图片中的精华信息、关键要点，生动地向读者描述图片的主要内容。注意排版、换行、emoji、标签的合理搭配，清楚地展现图片讲了什么')
+        user_params = self.params_cache.get(user_id, {})
+        prompt = user_params.get('prompt', '先全局分析图片的主要内容，并按照逻辑分层次、段落，提炼出5个左右图片中的精华信息、关键要点，生动地向读者描述图片的主要内容。注意排版、换行、emoji、标签的合理搭配，清楚地展现图片讲了什么')
 
         headers = {
             "Content-Type": "application/json",
