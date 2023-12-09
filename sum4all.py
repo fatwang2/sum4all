@@ -50,7 +50,7 @@ text =[{"role": "user", "content": "", "content_type":"image"}]
     name="sum4all",
     desire_priority=2,
     desc="A plugin for summarizing all things",
-    version="0.5.0",
+    version="0.5.1",
     author="fatwang2",
 )
 
@@ -121,6 +121,10 @@ class sum4all(Plugin):
             self.call_service(content, e_context, "search")
             return
         if context.type == ContextType.FILE:
+            if isgroup and not self.group_sharing:
+                # 群聊中忽略处理文件
+                logger.info("群聊消息，文件处理功能已禁用")
+                return
             logger.info("on_handle_context: 处理上下文开始")
             context.get("msg").prepare()
             file_path = context.content
@@ -135,6 +139,10 @@ class sum4all(Plugin):
             os.remove(file_path)
             logger.info(f"文件 {file_path} 已删除")
         elif context.type == ContextType.IMAGE:
+            if isgroup and not self.group_sharing:
+                # 群聊中忽略处理图片
+                logger.info("群聊消息，图片处理功能已禁用")
+                return
             logger.info("on_handle_context: 开始处理图片")
             context.get("msg").prepare()
             image_path = context.content
