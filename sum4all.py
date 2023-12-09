@@ -53,7 +53,7 @@ text =[{"role": "user", "content": "", "content_type":"image"}]
     name="sum4all",
     desire_priority=2,
     desc="A plugin for summarizing all things",
-    version="0.5.5",
+    version="0.5.6",
     author="fatwang2",
 )
 
@@ -98,6 +98,7 @@ class sum4all(Plugin):
             self.xunfei_api_key = self.config.get("xunfei_api_key","")
             self.xunfei_api_secret = self.config.get("xunfei_api_secret","")
             self.qa_prefix = self.config.get("qa_prefix","")
+            self.search_prefix = self.config.get("search_prefix","")
             self.params_cache = ExpiredDict(300)
             self.host = urlparse(imageunderstanding_url).netloc
             self.path = urlparse(imageunderstanding_url).path
@@ -125,8 +126,8 @@ class sum4all(Plugin):
         url_match = re.match('https?://(?:[-\w.]|(?:%[\da-fA-F]{2}))+', content)
         unsupported_urls = re.search(r'.*finder\.video\.qq\.com.*|.*support\.weixin\.qq\.com/update.*|.*support\.weixin\.qq\.com/security.*|.*mp\.weixin\.qq\.com/mp/waerrpage.*', content)
 
-            # 检查输入是否以"搜" 开头
-        if content.startswith("搜") and self.search_sum:
+            # 检查输入是否以"搜索前缀词" 开头
+        if content.startswith(self.search_prefix) and self.search_sum:
             # Call new function to handle search operation
             self.call_service(content, e_context, "search")
             return

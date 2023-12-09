@@ -2,6 +2,8 @@
 [telegram频道 ](https://t.me/+w2Z8S0Y8H2IxZDI9)
 
 ## 更新日志
+- V0.5.6，20231209，支持搜索提示词的自定义配置
+- V0.5.5，20231209，支持图片多轮对话，图片默认总结后，3min内输入提问提示词即可继续追问，提示词可自定义
 - V0.5.1，20231209，群聊开关支持图片、文件，可通过修改配置文件的group_sharing来判断是否支持自动对群聊的图片、文件做总结
 - V0.5.0，20231206，新增支持讯飞图片总结功能，免费赠送200万token，感谢alexgang的PR
 - V0.4.1，20231203，调整图片总结功能的最大token为3000，避免截断
@@ -40,6 +42,7 @@
 - 支持视频、播客内容总结，包括抖音、b站、小红书、YouTube等
 - 支持多种内容总结服务，可自由组合
 - 支持自定义prompt
+- 支持自定义搜索、追问提示词
 <table>
   <tr>
     <td><img src="picture/WX20231202-182036@2x.png" width="400px" alt="文件" /></td>
@@ -87,6 +90,8 @@
 "search_service":"", #搜索服务，目前支持sum_service为sum4all和perplexity
 "image_service":"", #图片总结服务，目前支持openai和xunfei
 "group_sharing": true, #是否支持群聊内的链接卡片、文件和图片
+"qa_prefix":"问", #追问提示词，以该词开头，才能触发追问
+"search_prefix":"搜", #搜索提示词，以该词开头，才能触发搜索
 "sum4all_key":"", #如选sum4all，则必填
 "xunfei_app_id": "", #讯飞大模型appid，如图片总结服务选择xunfei，则必填
 "xunfei_api_key": "", #讯飞大模型apikey，如图片总结服务选择xunfei，则必填
