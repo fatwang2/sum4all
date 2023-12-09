@@ -52,7 +52,7 @@ text =[{"role": "user", "content": "", "content_type":"image"}]
     name="sum4all",
     desire_priority=2,
     desc="A plugin for summarizing all things",
-    version="0.5.2",
+    version="0.5.3",
     author="fatwang2",
 )
 
