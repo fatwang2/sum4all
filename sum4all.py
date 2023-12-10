@@ -128,7 +128,7 @@ class sum4all(Plugin):
             self.call_service(content, e_context, "search")
             return
         
-        if user_id in self.params_cache and  'last_file_content' in self.params_cache[user_id] or 'last_image_base64' in self.params_cache[user_id] or 'last_url' in self.params_cache[user_id]:
+        if user_id in self.params_cache and ('last_file_content' in self.params_cache[user_id] or 'last_image_base64' in self.params_cache[user_id] or 'last_url' in self.params_cache[user_id]):
             if content.startswith(self.qa_prefix):
                 logger.info('Content starts with the qa_prefix.')
                 # 去除关键词和紧随其后的空格
