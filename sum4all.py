@@ -144,13 +144,13 @@ class sum4all(Plugin):
                 logger.info('Last last_file_content found in params_cache for user.')            
                 self.handle_openai_file(self.params_cache[user_id]['last_file_content'], e_context)
             # 如果存在最近一次处理的图片路径，触发图片理解函数
-            if 'last_image_path' in self.params_cache[user_id]:
+            if 'last_image_base64' in self.params_cache[user_id]:
                 logger.info('Last image path found in params_cache for user.')            
                 if self.image_service == "xunfei":
-                    self.handle_xunfei_image(self.params_cache[user_id]['last_image_path'], e_context)
+                    self.handle_xunfei_image(self.params_cache[user_id]['last_image_base64'], e_context)
                 else:
-                    self.handle_openai_image(self.params_cache[user_id]['last_image_path'], e_context)
-            if 'last_file_content' not in self.params_cache[user_id] and 'last_image_path' not in self.params_cache[user_id]:
+                    self.handle_openai_image(self.params_cache[user_id]['last_image_base64'], e_context)
+            if 'last_file_content' not in self.params_cache[user_id] and 'last_image_base64' not in self.params_cache[user_id]:
                 logger.error('No last path found in params_cache for user.')
         if context.type == ContextType.FILE:
             if isgroup and not self.group_sharing:
