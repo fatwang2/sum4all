@@ -155,8 +155,6 @@ class sum4all(Plugin):
                 elif 'last_url' in self.params_cache[user_id]:
                     logger.info('Last URL found in params_cache for user.')            
                     self.call_service(self.params_cache[user_id]['last_url'], e_context ,"sum")
-        else:
-            logger.error('No last path found in params_cache for user.')
         if context.type == ContextType.FILE:
             if isgroup and not self.group_sharing:
                 # 群聊中忽略处理文件
@@ -166,15 +164,17 @@ class sum4all(Plugin):
             context.get("msg").prepare()
             file_path = context.content
             logger.info(f"on_handle_context: 获取到文件路径 {file_path}")
-            # 更新params_cache中的last_file_content
-            if user_id not in self.params_cache:
-                self.params_cache[user_id] = {}
-            self.params_cache[user_id]['last_file_content'] = self.extract_content(file_path)
-            logger.info('Updated last_file_content in params_cache for user.')
+            
+            
             # 检查是否应该进行文件总结
             if self.file_sum:
-                content = self.extract_content(file_path)  # 提取内容
-                self.handle_openai_file(content, e_context)
+                # 更新params_cache中的last_file_content
+                if user_id not in self.params_cache:
+                    self.params_cache[user_id] = {}
+                file_content = self.extract_content(file_path)
+                self.params_cache[user_id]['last_file_content'] = file_content
+                logger.info('Updated last_file_content in params_cache for user.')
+                self.handle_openai_file(file_content, e_context)
             else:
                 logger.info("文件总结功能已禁用，不对文件内容进行处理")
             # 删除文件
@@ -190,15 +190,16 @@ class sum4all(Plugin):
             image_path = context.content
             logger.info(f"on_handle_context: 获取到图片路径 {image_path}")
             
-            # 更新params_cache中的last_image_path
-            if user_id not in self.params_cache:
-                self.params_cache[user_id] = {}
-            self.params_cache[user_id]['last_image_base64'] = self.encode_image_to_base64(image_path)
-            logger.info('Updated last_image_base64 in params_cache for user.')
+            
             # 检查是否应该进行图片总结
             if self.image_sum:
                 # 将图片路径转换为Base64编码的字符串
                 base64_image = self.encode_image_to_base64(image_path)
+                # 更新params_cache中的last_image_path
+                if user_id not in self.params_cache:
+                    self.params_cache[user_id] = {}
+                self.params_cache[user_id]['last_image_base64'] = base64_image
+                logger.info('Updated last_image_base64 in params_cache for user.')
                 if self.image_service == "xunfei":
                     self.handle_xunfei_image(base64_image, e_context)
                 else:
