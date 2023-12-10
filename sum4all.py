@@ -53,7 +53,7 @@ text =[{"role": "user", "content": "", "content_type":"image"}]
     name="sum4all",
     desire_priority=2,
     desc="A plugin for summarizing all things",
-    version="0.5.6",
+    version="0.5.7",
     author="fatwang2",
 )
 
@@ -110,10 +110,16 @@ class sum4all(Plugin):
         except Exception as e:
             # 初始化失败日志
             logger.warn(f"sum4all init failed: {e}")
-    def remove_image_file(self, image_path):
-        if os.path.exists(image_path):
-            os.remove(image_path)
-            logger.info('Removed image file: %s', image_path)   
+    def remove_file(self, file_path):
+        """删除指定路径的文件"""
+        if os.path.exists(file_path):
+            try:
+                os.remove(file_path)
+                logger.info(f"文件 {file_path} 已删除")
+            except Exception as e:
+                logger.error(f"删除文件 {file_path} 时出错: {e}")
+        else:
+            logger.error(f"文件 {file_path} 不存在")  
     def on_handle_context(self, e_context: EventContext):
         context = e_context["context"]
         if context.type not in [ContextType.TEXT, ContextType.SHARING,ContextType.FILE,ContextType.IMAGE]:
@@ -143,7 +149,10 @@ class sum4all(Plugin):
 
             self.params_cache[user_id]['prompt'] = new_content
             logger.info('params_cache for user: %s', self.params_cache[user_id])    
-
+            # 如果存在最近一次处理的文件路径，触发文件理解函数
+            if 'last_file_content' in self.params_cache[user_id]:
+                logger.info('Last file path found in params_cache for user.')            
+                self.handle_openai_file(self.params_cache[user_id]['last_file_content'], e_context)
             # 如果存在最近一次处理的图片路径，触发图片理解函数
             if 'last_image_path' in self.params_cache[user_id]:
                 logger.info('Last image path found in params_cache for user.')            
@@ -152,7 +161,7 @@ class sum4all(Plugin):
                 else:
                     self.handle_openai_image(self.params_cache[user_id]['last_image_path'], e_context)
             else:
-                logger.error('No last image path found in params_cache for user.')
+                logger.error('No last path found in params_cache for user.')
         if context.type == ContextType.FILE:
             if isgroup and not self.group_sharing:
                 # 群聊中忽略处理文件
@@ -162,15 +171,22 @@ class sum4all(Plugin):
             context.get("msg").prepare()
             file_path = context.content
             logger.info(f"on_handle_context: 获取到文件路径 {file_path}")
+            # 更新params_cache中的last_file_content
+            if user_id not in self.params_cache:
+                self.params_cache[user_id] = {}
+            self.params_cache[user_id]['last_file_content'] = self.extract_content(file_path)
+            logger.info('Updated last_file_content in params_cache for user.')
             # 检查是否应该进行文件总结
             if self.file_sum:
                 content = self.extract_content(file_path)  # 提取内容
                 self.handle_openai_file(content, e_context)
             else:
                 logger.info("文件总结功能已禁用，不对文件内容进行处理")
-                # 删除文件
+            # 删除文件
             os.remove(file_path)
             logger.info(f"文件 {file_path} 已删除")
+                        
+            
         elif context.type == ContextType.IMAGE:
             if isgroup and not self.group_sharing:
                 # 群聊中忽略处理图片
@@ -525,7 +541,10 @@ class sum4all(Plugin):
         else:
             logger.error(f"未知的sum_service配置: {self.sum_service}")
             return
-
+        msg: ChatMessage = e_context["context"]["msg"]
+        user_id = msg.from_user_id
+        user_params = self.params_cache.get(user_id, {})
+        prompt = user_params.get('prompt', self.prompt)
         headers = {
             'Content-Type': 'application/json',
             'Authorization': f'Bearer {api_key}'
@@ -533,7 +552,7 @@ class sum4all(Plugin):
         data = {
             "model": model,
             "messages": [
-                {"role": "system", "content": self.prompt},
+                {"role": "system", "content": prompt},
                 {"role": "user", "content": content}
             ]
         }
