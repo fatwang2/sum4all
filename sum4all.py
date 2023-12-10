@@ -53,7 +53,7 @@ text =[{"role": "user", "content": "", "content_type":"image"}]
     name="sum4all",
     desire_priority=2,
     desc="A plugin for summarizing all things",
-    version="0.5.7",
+    version="0.5.8",
     author="fatwang2",
 )
 
@@ -110,16 +110,6 @@ class sum4all(Plugin):
         except Exception as e:
             # 初始化失败日志
             logger.warn(f"sum4all init failed: {e}")
-    def remove_file(self, file_path):
-        """删除指定路径的文件"""
-        if os.path.exists(file_path):
-            try:
-                os.remove(file_path)
-                logger.info(f"文件 {file_path} 已删除")
-            except Exception as e:
-                logger.error(f"删除文件 {file_path} 时出错: {e}")
-        else:
-            logger.error(f"文件 {file_path} 不存在")  
     def on_handle_context(self, e_context: EventContext):
         context = e_context["context"]
         if context.type not in [ContextType.TEXT, ContextType.SHARING,ContextType.FILE,ContextType.IMAGE]:
@@ -148,10 +138,10 @@ class sum4all(Plugin):
                 logger.info('Added new user to params_cache.')
 
             self.params_cache[user_id]['prompt'] = new_content
-            logger.info('params_cache for user: %s', self.params_cache[user_id])    
+            logger.info('params_cache for user has been successfully updated.')   
             # 如果存在最近一次处理的文件路径，触发文件理解函数
             if 'last_file_content' in self.params_cache[user_id]:
-                logger.info('Last file path found in params_cache for user.')            
+                logger.info('Last last_file_content found in params_cache for user.')            
                 self.handle_openai_file(self.params_cache[user_id]['last_file_content'], e_context)
             # 如果存在最近一次处理的图片路径，触发图片理解函数
             if 'last_image_path' in self.params_cache[user_id]:
@@ -160,7 +150,7 @@ class sum4all(Plugin):
                     self.handle_xunfei_image(self.params_cache[user_id]['last_image_path'], e_context)
                 else:
                     self.handle_openai_image(self.params_cache[user_id]['last_image_path'], e_context)
-            else:
+            if 'last_file_content' not in self.params_cache[user_id] and 'last_image_path' not in self.params_cache[user_id]:
                 logger.error('No last path found in params_cache for user.')
         if context.type == ContextType.FILE:
             if isgroup and not self.group_sharing:
@@ -196,22 +186,25 @@ class sum4all(Plugin):
             context.get("msg").prepare()
             image_path = context.content
             logger.info(f"on_handle_context: 获取到图片路径 {image_path}")
+            
             # 更新params_cache中的last_image_path
             if user_id not in self.params_cache:
                 self.params_cache[user_id] = {}
-            self.params_cache[user_id]['last_image_path'] = image_path
-            logger.info('Updated last_image_path in params_cache for user.')
-            # 创建一个Timer，在5分钟后删除图片文件
-            timer = threading.Timer(5 * 60, self.remove_image_file, args=[image_path])
-            timer.start()
+            self.params_cache[user_id]['last_image_base64'] = self.encode_image_to_base64(image_path)
+            logger.info('Updated last_image_base64 in params_cache for user.')
             # 检查是否应该进行图片总结
             if self.image_sum:
+                # 将图片路径转换为Base64编码的字符串
+                base64_image = self.encode_image_to_base64(image_path)
                 if self.image_service == "xunfei":
-                    self.handle_xunfei_image(image_path, e_context)
+                    self.handle_xunfei_image(base64_image, e_context)
                 else:
-                    self.handle_openai_image(image_path, e_context)
+                    self.handle_openai_image(base64_image, e_context)
             else:
                 logger.info("图片总结功能已禁用，不对图片内容进行处理")
+            # 删除文件
+            os.remove(image_path)
+            logger.info(f"文件 {image_path} 已删除")
         elif context.type == ContextType.SHARING:  #匹配卡片分享
             if unsupported_urls:  #匹配不支持总结的卡片
                 if isgroup:  ##群聊中忽略
@@ -690,15 +683,12 @@ class sum4all(Plugin):
             return None
         logger.info("extract_content: 文件内容提取完成")
         return read_func(file_path)
+    def encode_image_to_base64(self, image_path):
+        with open(image_path, "rb") as image_file:
+            return base64.b64encode(image_file.read()).decode('utf-8')
     # Function to handle OpenAI image processing
-    def handle_openai_image(self, image_path, e_context):
+    def handle_openai_image(self, base64_image, e_context):
         logger.info("handle_openai_image_response: 解析OpenAI图像处理API的响应")
-        # Function to encode the image
-        def encode_image(image_path):
-            with open(image_path, "rb") as image_file:
-                return base64.b64encode(image_file.read()).decode('utf-8')
-        # Getting the base64 string
-        base64_image = encode_image(image_path)
         msg: ChatMessage = e_context["context"]["msg"]
         user_id = msg.from_user_id
         user_params = self.params_cache.get(user_id, {})
@@ -759,7 +749,7 @@ class sum4all(Plugin):
         e_context["reply"] = reply
         e_context.action = EventAction.BREAK_PASS
 
-    def handle_xunfei_image(self, image_path, e_context):
+    def handle_xunfei_image(self, base64_image, e_context):
         global text
         logger.info("handle_xunfei_image_response: 解析讯飞图像处理API的响应")
         websocket.enableTrace(False)
@@ -773,8 +763,8 @@ class sum4all(Plugin):
 
         ws = websocket.WebSocketApp(wsUrl, on_message=self.on_message, on_error=self.on_error, on_close=self.on_close, on_open=self.on_open)
         ws.appid = self.xunfei_app_id
-        ws.imagedata = open(image_path,"rb").read()
-        text = [{"role": "user", "content": str(base64.b64encode(ws.imagedata), 'utf-8'), "content_type": "image"}]
+        ws.imagedata = base64.b64decode(base64_image)
+        text = [{"role": "user", "content": base64_image, "content_type": "image"}]
         ws.question = self.checklen(self.getText("user",prompt))
         ws.run_forever(sslopt={"cert_reqs": ssl.CERT_NONE})
 
