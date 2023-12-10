@@ -53,7 +53,7 @@ text =[{"role": "user", "content": "", "content_type":"image"}]
     name="sum4all",
     desire_priority=2,
     desc="A plugin for summarizing all things",
-    version="0.5.9",
+    version="0.5.10",
     author="fatwang2",
 )
 
@@ -127,35 +127,36 @@ class sum4all(Plugin):
             # Call new function to handle search operation
             self.call_service(content, e_context, "search")
             return
-        if content.startswith(self.qa_prefix):
-            logger.info('Content starts with the qa_prefix.')
+        
+        if 'last_file_content' in self.params_cache[user_id] or 'last_image_base64' in self.params_cache[user_id] or 'last_url' in self.params_cache[user_id]:
+            if content.startswith(self.qa_prefix):
+                logger.info('Content starts with the qa_prefix.')
+                # 去除关键词和紧随其后的空格
+                new_content = content[len(self.qa_prefix):]
+                # 将用户的问题存储在params_cache中
+                if user_id not in self.params_cache:
+                    self.params_cache[user_id] = {}
+                    logger.info('Added new user to params_cache.')
 
-            # 去除关键词和紧随其后的空格
-            new_content = content[len(self.qa_prefix):]
-            # 将用户的问题存储在params_cache中
-            if user_id not in self.params_cache:
-                self.params_cache[user_id] = {}
-                logger.info('Added new user to params_cache.')
-
-            self.params_cache[user_id]['prompt'] = new_content
-            logger.info('params_cache for user has been successfully updated.')   
-            # 如果存在最近一次处理的文件路径，触发文件理解函数
-            if 'last_file_content' in self.params_cache[user_id]:
-                logger.info('Last last_file_content found in params_cache for user.')            
-                self.handle_openai_file(self.params_cache[user_id]['last_file_content'], e_context)
-            # 如果存在最近一次处理的图片路径，触发图片理解函数
-            if 'last_image_base64' in self.params_cache[user_id]:
-                logger.info('Last image path found in params_cache for user.')            
-                if self.image_service == "xunfei":
-                    self.handle_xunfei_image(self.params_cache[user_id]['last_image_base64'], e_context)
-                else:
-                    self.handle_openai_image(self.params_cache[user_id]['last_image_base64'], e_context)
-            # 如果存在最近一次处理的URL，触发URL理解函数
-            if 'last_url' in self.params_cache[user_id]:
-                logger.info('Last URL found in params_cache for user.')            
-                self.call_service(self.params_cache[user_id]['last_url'], e_context ,"sum")
-            if 'last_file_content' not in self.params_cache[user_id] and 'last_image_base64' not in self.params_cache[user_id]and 'last_url' not in self.params_cache[user_id]:
-                logger.error('No last path found in params_cache for user.')
+                self.params_cache[user_id]['prompt'] = new_content
+                logger.info('params_cache for user has been successfully updated.')   
+                # 如果存在最近一次处理的文件路径，触发文件理解函数
+                if 'last_file_content' in self.params_cache[user_id]:
+                    logger.info('Last last_file_content found in params_cache for user.')            
+                    self.handle_openai_file(self.params_cache[user_id]['last_file_content'], e_context)
+                # 如果存在最近一次处理的图片路径，触发图片理解函数
+                elif 'last_image_base64' in self.params_cache[user_id]:
+                    logger.info('Last image path found in params_cache for user.')            
+                    if self.image_service == "xunfei":
+                        self.handle_xunfei_image(self.params_cache[user_id]['last_image_base64'], e_context)
+                    else:
+                        self.handle_openai_image(self.params_cache[user_id]['last_image_base64'], e_context)
+                # 如果存在最近一次处理的URL，触发URL理解函数
+                elif 'last_url' in self.params_cache[user_id]:
+                    logger.info('Last URL found in params_cache for user.')            
+                    self.call_service(self.params_cache[user_id]['last_url'], e_context ,"sum")
+        else:
+            logger.error('No last path found in params_cache for user.')
         if context.type == ContextType.FILE:
             if isgroup and not self.group_sharing:
                 # 群聊中忽略处理文件
@@ -348,7 +349,7 @@ class sum4all(Plugin):
                 logger.error(f"Error calling OpenAI API: {e}")
             reply = Reply()
             reply.type = ReplyType.TEXT
-            reply.content = f"{content}"            
+            reply.content = f"{content}\n\n💬5min内输入“{self.qa_prefix}+具体问题”，可继续追问"            
             e_context["reply"] = reply
             e_context.action = EventAction.BREAK_PASS
     def handle_sum4all(self, content, e_context):
@@ -395,7 +396,7 @@ class sum4all(Plugin):
 
         reply = Reply()
         reply.type = ReplyType.TEXT
-        reply.content = reply_content            
+        reply.content = f"{reply_content}\n\n💬5min内输入“{self.qa_prefix}+具体问题”，可继续追问"             
         e_context["reply"] = reply
         e_context.action = EventAction.BREAK_PASS
     def handle_bibigpt(self, content, e_context):    
@@ -609,7 +610,7 @@ class sum4all(Plugin):
 
         reply = Reply()
         reply.type = ReplyType.TEXT
-        reply.content = reply_content  # 设置响应内容到回复对象
+        reply.content = f"{reply_content}\n\n💬5min内输入“{self.qa_prefix}+具体问题”，可继续追问" 
         e_context["reply"] = reply
         e_context.action = EventAction.BREAK_PASS
     def read_pdf(self, file_path):
@@ -780,7 +781,7 @@ class sum4all(Plugin):
 
         reply = Reply()
         reply.type = ReplyType.TEXT
-        reply.content = remove_markdown(reply_content)  # 设置响应内容到回复对象
+        reply.content = f"{remove_markdown(reply_content)}\n5min内输入{self.qa_prefix}+问题，可继续追问"  
         e_context["reply"] = reply
         e_context.action = EventAction.BREAK_PASS
 
@@ -888,7 +889,7 @@ class sum4all(Plugin):
                 logger.info("XunFei Image API response content")  # 记录响应内容
                 reply = Reply()
                 reply.type = ReplyType.TEXT
-                reply.content = remove_markdown(self.ws_answer)    # 设置响应内容到回复对象
+                reply.content = reply.content = f"{remove_markdown(self.ws_answer)}\n5min内输入{self.qa_prefix}+问题，可继续追问"
                 e_context["reply"] = reply
                 e_context.action = EventAction.BREAK_PASS
                 ws.close()
