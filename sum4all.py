@@ -153,7 +153,7 @@ class sum4all(Plugin):
             # 如果存在最近一次处理的URL，触发URL理解函数
             if 'last_url' in self.params_cache[user_id]:
                 logger.info('Last URL found in params_cache for user.')            
-                self.call_service(self.params_cache[user_id]['last_url'], e_context "sum")
+                self.call_service(self.params_cache[user_id]['last_url'], e_context ,"sum")
             if 'last_file_content' not in self.params_cache[user_id] and 'last_image_base64' not in self.params_cache[user_id]and 'last_url' not in self.params_cache[user_id]:
                 logger.error('No last path found in params_cache for user.')
         if context.type == ContextType.FILE:
