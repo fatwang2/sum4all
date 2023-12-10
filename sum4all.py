@@ -53,7 +53,7 @@ text =[{"role": "user", "content": "", "content_type":"image"}]
     name="sum4all",
     desire_priority=2,
     desc="A plugin for summarizing all things",
-    version="0.5.10",
+    version="0.5.11",
     author="fatwang2",
 )
 
@@ -143,7 +143,7 @@ class sum4all(Plugin):
                 # 如果存在最近一次处理的文件路径，触发文件理解函数
                 if 'last_file_content' in self.params_cache[user_id]:
                     logger.info('Last last_file_content found in params_cache for user.')            
-                    self.handle_openai_file(self.params_cache[user_id]['last_file_content'], e_context)
+                    self.handle_file(self.params_cache[user_id]['last_file_content'], e_context)
                 # 如果存在最近一次处理的图片路径，触发图片理解函数
                 elif 'last_image_base64' in self.params_cache[user_id]:
                     logger.info('Last image path found in params_cache for user.')            
@@ -169,12 +169,11 @@ class sum4all(Plugin):
             # 检查是否应该进行文件总结
             if self.file_sum:
                 # 更新params_cache中的last_file_content
-                if user_id not in self.params_cache:
-                    self.params_cache[user_id] = {}
+                self.params_cache[user_id] = {}
                 file_content = self.extract_content(file_path)
                 self.params_cache[user_id]['last_file_content'] = file_content
                 logger.info('Updated last_file_content in params_cache for user.')
-                self.handle_openai_file(file_content, e_context)
+                self.handle_file(file_content, e_context)
             else:
                 logger.info("文件总结功能已禁用，不对文件内容进行处理")
             # 删除文件
@@ -196,8 +195,7 @@ class sum4all(Plugin):
                 # 将图片路径转换为Base64编码的字符串
                 base64_image = self.encode_image_to_base64(image_path)
                 # 更新params_cache中的last_image_path
-                if user_id not in self.params_cache:
-                    self.params_cache[user_id] = {}
+                self.params_cache[user_id] = {}
                 self.params_cache[user_id]['last_image_base64'] = base64_image
                 logger.info('Updated last_image_base64 in params_cache for user.')
                 if self.image_service == "xunfei":
@@ -223,8 +221,7 @@ class sum4all(Plugin):
                     if self.group_sharing:  #group_sharing = True进行总结，False则忽略。
                         logger.info("[sum4all] Summary URL : %s", content)
                         # 更新params_cache中的last_url
-                        if user_id not in self.params_cache:
-                            self.params_cache[user_id] = {}
+                        self.params_cache[user_id] = {}
                         self.params_cache[user_id]['last_url'] = content
                         logger.info('Updated last_url in params_cache for user.')
                         self.call_service(content, e_context, "sum")
@@ -234,12 +231,12 @@ class sum4all(Plugin):
                 else:  #处理私聊总结
                     logger.info("[sum4all] Summary URL : %s", content)
                     # 更新params_cache中的last_url
-                    if user_id not in self.params_cache:
-                        self.params_cache[user_id] = {}
+                    self.params_cache[user_id] = {}
                     self.params_cache[user_id]['last_url'] = content
                     logger.info('Updated last_url in params_cache for user.')
                     self.call_service(content, e_context, "sum")
                     return
+            
         elif url_match: #匹配URL链接
             if unsupported_urls:  #匹配不支持总结的网址
                 logger.info("[sum4all] Unsupported URL : %s", content)
@@ -249,27 +246,24 @@ class sum4all(Plugin):
             else:
                 logger.info("[sum4all] Summary URL : %s", content)
                 # 更新params_cache中的last_url
-                if user_id not in self.params_cache:
-                    self.params_cache[user_id] = {}
+                self.params_cache[user_id] = {}
                 self.params_cache[user_id]['last_url'] = content
                 logger.info('Updated last_url in params_cache for user.')
                 self.call_service(content, e_context, "sum")
                 return
     def call_service(self, content, e_context, service_type):
         if service_type == "search":
-            if self.search_service == "sum4all":
+            if self.search_service == "openai" or self.sum_service == "sum4all":
                 self.handle_search(content, e_context)
             elif self.search_service == "perplexity":
                 self.handle_perplexity(content, e_context)
         elif service_type == "sum":
             if self.sum_service == "bibigpt":
                 self.handle_bibigpt(content, e_context)
-            elif self.sum_service == "openai":
-                self.handle_openai(content, e_context)
+            elif self.sum_service == "openai" or self.sum_service == "sum4all":
+                self.handle_url(content, e_context)
             elif self.sum_service == "opensum":
                 self.handle_opensum(content, e_context)
-            elif self.sum_service == "sum4all":
-                self.handle_sum4all(content, e_context)
  
         
     def short_url(self, long_url):
@@ -287,85 +281,34 @@ class sum4all(Plugin):
             if short_url:
                 return short_url
         return None
-    def handle_openai(self, content, e_context):
-        logger.info('Handling OpenAI request...')
-
-        meta = None      
-        msg: ChatMessage = e_context["context"]["msg"]
-        user_id = msg.from_user_id
-        user_params = self.params_cache.get(user_id, {})
-        prompt = user_params.get('prompt', self.prompt)
-        headers = {
-            'Content-Type': 'application/json',
-            'WebPilot-Friend-UID': 'fatwang2'
-        }
-        payload = json.dumps({"link": content})
-        try:
-            logger.info('Sending request to OpenAI...')
-            api_url = "https://gpts.webpilot.ai/api/visit-web"
-            response = requests.request("POST",api_url, headers=headers, data=payload)
-            response.raise_for_status()
-            logger.info('Received response from webpilot.')
-            data = json.loads(response.text)
-            meta= data.get('content','content not available')  # 获取data字段                
-
-        except requests.exceptions.RequestException as e:
-            logger.error(f"An error occurred: {e}")
-            meta = f"An error occurred: {e}"          
-
-        # 如果meta获取成功，发送请求到OpenAI
-        if meta:
-            try:
-                logger.info('Sending request to OpenAI...')
-                headers = {
-                    'Content-Type': 'application/json',
-                    'Authorization': f'Bearer {self.open_ai_api_key}'  # 使用你的OpenAI API密钥
-                }
-                data = {
-                    "model": self.model, 
-                    "messages": [
-                        {"role": "system", "content": prompt},
-                        {"role": "user", "content": meta}
-                    ]
-                }
-            
-                response = requests.post(f"{self.open_ai_api_base}/chat/completions", headers=headers, data=json.dumps(data))
-                response.raise_for_status()
-                logger.info('Received response from OpenAI.')
-
-                # 处理响应数据
-                response_data = response.json()
-                # 这里可以根据你的需要处理响应数据
-                # 解析 JSON 并获取 content
-                if "choices" in response_data and len(response_data["choices"]) > 0:
-                    first_choice = response_data["choices"][0]
-                    if "message" in first_choice and "content" in first_choice["message"]:
-                        content = first_choice["message"]["content"]
-                    else:
-                        print("Content not found in the response")
-                else:
-                    print("No choices available in the response")
-            except requests.exceptions.RequestException as e:
-                # 处理可能出现的错误
-                logger.error(f"Error calling OpenAI API: {e}")
-            reply = Reply()
-            reply.type = ReplyType.TEXT
-            reply.content = f"{content}\n\n💬5min内输入“{self.qa_prefix}+具体问题”，可继续追问"            
-            e_context["reply"] = reply
-            e_context.action = EventAction.BREAK_PASS
-    def handle_sum4all(self, content, e_context):
+    def handle_url(self, content, e_context):
         logger.info('Handling Sum4All request...')
+        # 根据sum_service的值选择API密钥和基础URL
+        if self.sum_service == "openai":
+            api_key = self.open_ai_api_key
+            api_base = self.open_ai_api_base
+            model = self.model
+        elif self.sum_service == "sum4all":
+            api_key = self.sum4all_key
+            api_base = "https://pro.sum4all.site/v1"
+            model = "sum4all"
+        else:
+            logger.error(f"未知的sum_service配置: {self.sum_service}")
+            return
+        
         msg: ChatMessage = e_context["context"]["msg"]
         user_id = msg.from_user_id
         user_params = self.params_cache.get(user_id, {})
         prompt = user_params.get('prompt', self.prompt)
         headers = {
             'Content-Type': 'application/json',
-            'Authorization': f'Bearer {self.sum4all_key}'
+            'Authorization': f'Bearer {api_key}'
         }
         payload = json.dumps({
             "link": content,
-            "prompt": prompt
+            "prompt": prompt,
+            "model": model,
+            "base": api_base
         })
         additional_content = ""  # 在 try 块之前初始化 additional_content
 
@@ -472,14 +415,27 @@ class sum4all(Plugin):
         e_context["reply"] = reply
         e_context.action = EventAction.BREAK_PASS    
     def handle_search(self, content, e_context):
-        
+        # 根据sum_service的值选择API密钥和基础URL
+        if self.sum_service == "openai":
+            api_key = self.open_ai_api_key
+            api_base = self.open_ai_api_base
+            model = self.model
+        elif self.sum_service == "sum4all":
+            api_key = self.sum4all_key
+            api_base = "https://pro.sum4all.site/v1"
+            model = "sum4all"
+        else:
+            logger.error(f"未知的sum_service配置: {self.sum_service}")
+            return
         headers = {
             'Content-Type': 'application/json',
-            'Authorization': f'Bearer {self.sum4all_key}'
+            'Authorization': f'Bearer {api_key}'
         }
         payload = json.dumps({
             "ur": content,
-            "prompt": self.search_prompt
+            "prompt": self.search_prompt,
+            "model": model,
+            "base": api_base
         })
         try:
             api_url = "https://ai.sum4all.site"
@@ -557,8 +513,8 @@ class sum4all(Plugin):
     def get_help_text(self, **kwargs):
         help_text = "输入url/分享链接/搜索关键词，直接为你总结\n"
         return help_text
-    def handle_openai_file(self, content, e_context):
-        logger.info("handle_openai_file: 向OpenAI发送内容总结请求")
+    def handle_file(self, content, e_context):
+        logger.info("handle_file: 向OpenAI发送内容总结请求")
         # 根据sum_service的值选择API密钥和基础URL
         if self.sum_service == "openai":
             api_key = self.open_ai_api_key
