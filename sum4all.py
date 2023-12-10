@@ -53,7 +53,7 @@ text =[{"role": "user", "content": "", "content_type":"image"}]
     name="sum4all",
     desire_priority=2,
     desc="A plugin for summarizing all things",
-    version="0.5.11",
+    version="0.6.0",
     author="fatwang2",
 )
 
@@ -313,11 +313,11 @@ class sum4all(Plugin):
         additional_content = ""  # 在 try 块之前初始化 additional_content
 
         try:
-            logger.info('Sending request to Sum4All...')
+            logger.info('Sending request to LLM...')
             api_url = "https://ai.sum4all.site"
             response = requests.post(api_url, headers=headers, data=payload)
             response.raise_for_status()
-            logger.info('Received response from Sum4All.')
+            logger.info('Received response from LLM.')
             response_data = response.json()  # 解析响应的 JSON 数据
             if response_data.get("success"):
                 content = response_data["content"].replace("\\n", "\n")  # 替换 \\n 为 \n
