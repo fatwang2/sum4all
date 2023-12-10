@@ -53,7 +53,7 @@ text =[{"role": "user", "content": "", "content_type":"image"}]
     name="sum4all",
     desire_priority=2,
     desc="A plugin for summarizing all things",
-    version="0.5.8",
+    version="0.5.9",
     author="fatwang2",
 )
 
@@ -150,7 +150,11 @@ class sum4all(Plugin):
                     self.handle_xunfei_image(self.params_cache[user_id]['last_image_base64'], e_context)
                 else:
                     self.handle_openai_image(self.params_cache[user_id]['last_image_base64'], e_context)
-            if 'last_file_content' not in self.params_cache[user_id] and 'last_image_base64' not in self.params_cache[user_id]:
+            # 如果存在最近一次处理的URL，触发URL理解函数
+            if 'last_url' in self.params_cache[user_id]:
+                logger.info('Last URL found in params_cache for user.')            
+                self.call_service(self.params_cache[user_id]['last_url'], e_context "sum")
+            if 'last_file_content' not in self.params_cache[user_id] and 'last_image_base64' not in self.params_cache[user_id]and 'last_url' not in self.params_cache[user_id]:
                 logger.error('No last path found in params_cache for user.')
         if context.type == ContextType.FILE:
             if isgroup and not self.group_sharing:
@@ -175,8 +179,6 @@ class sum4all(Plugin):
             # 删除文件
             os.remove(file_path)
             logger.info(f"文件 {file_path} 已删除")
-                        
-            
         elif context.type == ContextType.IMAGE:
             if isgroup and not self.group_sharing:
                 # 群聊中忽略处理图片
@@ -218,12 +220,22 @@ class sum4all(Plugin):
                 if isgroup:  #处理群聊总结
                     if self.group_sharing:  #group_sharing = True进行总结，False则忽略。
                         logger.info("[sum4all] Summary URL : %s", content)
+                        # 更新params_cache中的last_url
+                        if user_id not in self.params_cache:
+                            self.params_cache[user_id] = {}
+                        self.params_cache[user_id]['last_url'] = content
+                        logger.info('Updated last_url in params_cache for user.')
                         self.call_service(content, e_context, "sum")
                         return
                     else:
                         return
                 else:  #处理私聊总结
                     logger.info("[sum4all] Summary URL : %s", content)
+                    # 更新params_cache中的last_url
+                    if user_id not in self.params_cache:
+                        self.params_cache[user_id] = {}
+                    self.params_cache[user_id]['last_url'] = content
+                    logger.info('Updated last_url in params_cache for user.')
                     self.call_service(content, e_context, "sum")
                     return
         elif url_match: #匹配URL链接
@@ -234,6 +246,11 @@ class sum4all(Plugin):
                 e_context.action = EventAction.BREAK_PASS
             else:
                 logger.info("[sum4all] Summary URL : %s", content)
+                # 更新params_cache中的last_url
+                if user_id not in self.params_cache:
+                    self.params_cache[user_id] = {}
+                self.params_cache[user_id]['last_url'] = content
+                logger.info('Updated last_url in params_cache for user.')
                 self.call_service(content, e_context, "sum")
                 return
     def call_service(self, content, e_context, service_type):
@@ -269,25 +286,35 @@ class sum4all(Plugin):
                 return short_url
         return None
     def handle_openai(self, content, e_context):
+        logger.info('Handling OpenAI request...')
+
         meta = None      
+        msg: ChatMessage = e_context["context"]["msg"]
+        user_id = msg.from_user_id
+        user_params = self.params_cache.get(user_id, {})
+        prompt = user_params.get('prompt', self.prompt)
         headers = {
             'Content-Type': 'application/json',
             'WebPilot-Friend-UID': 'fatwang2'
         }
         payload = json.dumps({"link": content})
         try:
+            logger.info('Sending request to OpenAI...')
             api_url = "https://gpts.webpilot.ai/api/visit-web"
             response = requests.request("POST",api_url, headers=headers, data=payload)
             response.raise_for_status()
+            logger.info('Received response from webpilot.')
             data = json.loads(response.text)
             meta= data.get('content','content not available')  # 获取data字段                
 
         except requests.exceptions.RequestException as e:
+            logger.error(f"An error occurred: {e}")
             meta = f"An error occurred: {e}"          
 
         # 如果meta获取成功，发送请求到OpenAI
         if meta:
             try:
+                logger.info('Sending request to OpenAI...')
                 headers = {
                     'Content-Type': 'application/json',
                     'Authorization': f'Bearer {self.open_ai_api_key}'  # 使用你的OpenAI API密钥
@@ -295,13 +322,14 @@ class sum4all(Plugin):
                 data = {
                     "model": self.model, 
                     "messages": [
-                        {"role": "system", "content": self.prompt},
+                        {"role": "system", "content": prompt},
                         {"role": "user", "content": meta}
                     ]
                 }
             
                 response = requests.post(f"{self.open_ai_api_base}/chat/completions", headers=headers, data=json.dumps(data))
                 response.raise_for_status()
+                logger.info('Received response from OpenAI.')
 
                 # 处理响应数据
                 response_data = response.json()
@@ -324,20 +352,27 @@ class sum4all(Plugin):
             e_context["reply"] = reply
             e_context.action = EventAction.BREAK_PASS
     def handle_sum4all(self, content, e_context):
+        logger.info('Handling Sum4All request...')
+        msg: ChatMessage = e_context["context"]["msg"]
+        user_id = msg.from_user_id
+        user_params = self.params_cache.get(user_id, {})
+        prompt = user_params.get('prompt', self.prompt)
         headers = {
             'Content-Type': 'application/json',
             'Authorization': f'Bearer {self.sum4all_key}'
         }
         payload = json.dumps({
             "link": content,
-            "prompt": self.prompt
+            "prompt": prompt
         })
         additional_content = ""  # 在 try 块之前初始化 additional_content
 
         try:
+            logger.info('Sending request to Sum4All...')
             api_url = "https://ai.sum4all.site"
             response = requests.post(api_url, headers=headers, data=payload)
             response.raise_for_status()
+            logger.info('Received response from Sum4All.')
             response_data = response.json()  # 解析响应的 JSON 数据
             if response_data.get("success"):
                 content = response_data["content"].replace("\\n", "\n")  # 替换 \\n 为 \n
