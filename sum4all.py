@@ -81,12 +81,14 @@ class sum4all(Plugin):
             self.bibigpt_key = self.config.get("bibigpt_key","")
             self.outputLanguage = self.config.get("outputLanguage","zh-CN")
             self.group_sharing = self.config.get("group_sharing","true")
+            self.group_image_sum = self.config.get("group_image_sum","true")
             self.opensum_key = self.config.get("opensum_key","")
             self.open_ai_api_key = self.config.get("open_ai_api_key","")
             self.model = self.config.get("model","gpt-3.5-turbo")
             self.open_ai_api_base = self.config.get("open_ai_api_base","https://api.openai.com/v1")
             self.prompt = self.config.get("prompt","你是一个新闻专家，我会给你发一些网页内容，请你用简单明了的语言做总结。格式如下：📌总结\n一句话讲清楚整篇文章的核心观点，控制在30字左右。\n\n💡要点\n用数字序号列出来3-5个文章的核心内容，尽量使用emoji让你的表达更生动，请注意输出的内容不要有两个转义符")
             self.search_prompt = self.config.get("search_prompt","你是一个信息检索专家，请你用简单明了的语言，对你收到的内容做总结。尽量使用emoji让你的表达更生动")
+            self.image_prompt = self.config.get("image_prompt","先全局分析图片的主要内容，并按照逻辑分层次、段落，提炼出5个左右图片中的精华信息、关键要点，生动地向读者描述图片的主要内容。注意排版、换行、emoji、标签的合理搭配，清楚地展现图片讲了什么。")
             self.sum4all_key = self.config.get("sum4all_key","")
             self.search_sum = self.config.get("search_sum","")
             self.file_sum = self.config.get("file_sum","")
@@ -99,6 +101,9 @@ class sum4all(Plugin):
             self.xunfei_api_secret = self.config.get("xunfei_api_secret","")
             self.qa_prefix = self.config.get("qa_prefix","问")
             self.search_prefix = self.config.get("search_prefix","搜")
+            self.image_sum_trigger = self.config.get("image_sum_trigger","识图")
+            self.image_sum_batch_trigger = self.config.get("image_sum_batch_trigger","批量识图")
+            self.close_image_sum_trigger = self.config.get("close_image_sum_trigger","关闭识图")
             self.params_cache = ExpiredDict(300)
             self.host = urlparse(imageunderstanding_url).netloc
             self.path = urlparse(imageunderstanding_url).path
@@ -139,6 +144,7 @@ class sum4all(Plugin):
                     logger.info('Added new user to params_cache.')
 
                 self.params_cache[user_id]['prompt'] = new_content
+                self.params_cache[user_id]['image_prompt'] = new_content
                 logger.info('params_cache for user has been successfully updated.')   
                 # 如果存在最近一次处理的文件路径，触发文件理解函数
                 if 'last_file_content' in self.params_cache[user_id]:
@@ -155,7 +161,40 @@ class sum4all(Plugin):
                 elif 'last_url' in self.params_cache[user_id]:
                     logger.info('Last URL found in params_cache for user.')            
                     self.call_service(self.params_cache[user_id]['last_url'], e_context ,"sum")
-        if context.type == ContextType.FILE:
+
+        if e_context['context'].type == ContextType.TEXT:
+            if content.startswith(self.image_sum_trigger) and self.image_sum:
+                # Call new function to handle search operation
+                pattern = self.image_sum_trigger + r"\s(.+)"
+                match = re.match(pattern, content)
+                tip = f"\n未检测到提示词，将使用系统默认提示词。\n自定义提示词的格式为：{self.image_sum_trigger}+空格+提示词"
+                if match:
+                    self.params_cache[user_id]['image_prompt'] = content[len(self.image_sum_trigger):]
+                    tip = f"\n使用的提示词为:{self.params_cache[user_id]['image_prompt'] }"
+                else:  
+                    self.params_cache[user_id]['image_prompt'] = self.image_prompt
+
+                self.params_cache[user_id]['image_sum_quota'] = 1
+                reply = Reply(type=ReplyType.TEXT, content="已开启单张识图模式，您接下来第一张图片会进行识别。"+ tip)
+                e_context["reply"] = reply
+                e_context.action = EventAction.BREAK_PASS
+
+            elif content.startswith(self.image_sum_batch_trigger) and self.image_sum:
+                # Call new function to handle search operation
+                self.params_cache[user_id]['image_sum_quota'] = 5
+                self.params_cache[user_id]['image_prompt'] = self.image_prompt
+                reply = Reply(type=ReplyType.TEXT, content="已开启批量识图模式，您接下来5张图片都会进行识别。")
+                e_context["reply"] = reply
+                e_context.action = EventAction.BREAK_PASS
+
+            elif content.startswith(self.close_image_sum_trigger) and self.image_sum:
+                # Call new function to handle search operation
+                self.params_cache[user_id]['image_sum_quota'] = 0
+                reply = Reply(type=ReplyType.TEXT, content="已关闭识图模式，您的图片不再继续进行识别。")
+                e_context["reply"] = reply
+                e_context.action = EventAction.BREAK_PASS
+
+        elif context.type == ContextType.FILE:
             if isgroup and not self.group_sharing:
                 # 群聊中忽略处理文件
                 logger.info("群聊消息，文件处理功能已禁用")
@@ -180,7 +219,11 @@ class sum4all(Plugin):
             os.remove(file_path)
             logger.info(f"文件 {file_path} 已删除")
         elif context.type == ContextType.IMAGE:
-            if isgroup and not self.group_sharing:
+            if self.params_cache[user_id]['image_sum_quota'] < 1:
+                logger.info("on_handle_context: 当前用户识图配额不够，不进行识别")
+                return
+    
+            if isgroup and not self.group_image_sum:
                 # 群聊中忽略处理图片
                 logger.info("群聊消息，图片处理功能已禁用")
                 return
@@ -192,6 +235,8 @@ class sum4all(Plugin):
             
             # 检查是否应该进行图片总结
             if self.image_sum:
+                self.params_cache[user_id]['image_sum_quota'] = self.params_cache[user_id]['image_sum_quota'] - 1
+                logger.info(f"on_handle_context: 开始识图，识图后剩余额度为：{self.params_cache[user_id]['image_sum_quota']}")
                 # 将图片路径转换为Base64编码的字符串
                 base64_image = self.encode_image_to_base64(image_path)
                 # 更新params_cache中的last_image_path
@@ -685,7 +730,7 @@ class sum4all(Plugin):
         msg: ChatMessage = e_context["context"]["msg"]
         user_id = msg.from_user_id
         user_params = self.params_cache.get(user_id, {})
-        prompt = user_params.get('prompt', '先全局分析图片的主要内容，并按照逻辑分层次、段落，提炼出5个左右图片中的精华信息、关键要点，生动地向读者描述图片的主要内容。注意排版、换行、emoji、标签的合理搭配，清楚地展现图片讲了什么')
+        image_prompt = user_params.get('image_prompt', self.image_prompt)
 
         headers = {
             "Content-Type": "application/json",
@@ -700,7 +745,7 @@ class sum4all(Plugin):
                     "content": [
                         {
                             "type": "text",
-                            "text": prompt
+                            "text": image_prompt
                         },
                         {
                             "type": "image_url",
