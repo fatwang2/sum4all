@@ -137,7 +137,6 @@ class sum4all(Plugin):
         if user_id not in self.params_cache:
             self.params_cache[user_id] = {}
             self.params_cache[user_id]['image_sum_quota'] = 0
-            self.params_cache[user_id]['image_prompt'] = self.image_prompt
             logger.info('Added new user to params_cache.')
 
         if user_id in self.params_cache and ('last_file_content' in self.params_cache[user_id] or 'last_image_base64' in self.params_cache[user_id] or 'last_url' in self.params_cache[user_id]):
@@ -174,6 +173,8 @@ class sum4all(Plugin):
                 if match:
                     self.params_cache[user_id]['image_prompt'] = content[len(self.image_sum_trigger):]
                     tip = f"\n使用的提示词为:{self.params_cache[user_id]['image_prompt'] }"
+                else:
+                    self.params_cache[user_id]['image_prompt'] = self.image_prompt
 
                 self.params_cache[user_id]['image_sum_quota'] = 1
                 reply = Reply(type=ReplyType.TEXT, content="已开启单张识图模式，您接下来第一张图片会进行识别。"+ tip)
@@ -183,6 +184,8 @@ class sum4all(Plugin):
             elif content.startswith(self.image_sum_batch_trigger) and self.image_sum:
                 # Call new function to handle search operation
                 self.params_cache[user_id]['image_sum_quota'] = 5
+                #批量识图中，自定义提示词意义不大，故直接使用默认提示词
+                self.params_cache[user_id]['image_prompt'] = self.image_prompt
                 reply = Reply(type=ReplyType.TEXT, content="已开启批量识图模式，您接下来5张图片都会进行识别。")
                 e_context["reply"] = reply
                 e_context.action = EventAction.BREAK_PASS
@@ -208,7 +211,7 @@ class sum4all(Plugin):
             # 检查是否应该进行文件总结
             if self.file_sum:
                 # 更新params_cache中的last_file_content
-                self.params_cache[user_id] = {}
+                # self.params_cache[user_id] = {}
                 file_content = self.extract_content(file_path)
                 self.params_cache[user_id]['last_file_content'] = file_content
                 logger.info('Updated last_file_content in params_cache for user.')
@@ -266,7 +269,7 @@ class sum4all(Plugin):
                     if self.group_sharing:  #group_sharing = True进行总结，False则忽略。
                         logger.info("[sum4all] Summary URL : %s", content)
                         # 更新params_cache中的last_url
-                        self.params_cache[user_id] = {}
+                        # self.params_cache[user_id] = {}
                         self.params_cache[user_id]['last_url'] = content
                         logger.info('Updated last_url in params_cache for user.')
                         self.call_service(content, e_context, "sum")
@@ -276,7 +279,7 @@ class sum4all(Plugin):
                 else:  #处理私聊总结
                     logger.info("[sum4all] Summary URL : %s", content)
                     # 更新params_cache中的last_url
-                    self.params_cache[user_id] = {}
+                    # self.params_cache[user_id] = {}
                     self.params_cache[user_id]['last_url'] = content
                     logger.info('Updated last_url in params_cache for user.')
                     self.call_service(content, e_context, "sum")
@@ -291,7 +294,7 @@ class sum4all(Plugin):
             else:
                 logger.info("[sum4all] Summary URL : %s", content)
                 # 更新params_cache中的last_url
-                self.params_cache[user_id] = {}
+                # self.params_cache[user_id] = {}
                 self.params_cache[user_id]['last_url'] = content
                 logger.info('Updated last_url in params_cache for user.')
                 self.call_service(content, e_context, "sum")
@@ -797,14 +800,13 @@ class sum4all(Plugin):
         msg: ChatMessage = e_context["context"]["msg"]
         user_id = msg.from_user_id
         user_params = self.params_cache.get(user_id, {})
-        prompt = user_params.get('prompt', '先全局分析图片的主要内容，并按照逻辑分层次、段落，提炼出5个左右图片中的精华信息、关键要点，生动地向读者描述图片的主要内容。注意排版、换行、emoji、标签的合理搭配，清楚地展现图片讲了什么')
-
+        image_prompt = user_params.get('image_prompt', self.image_prompt)
 
         ws = websocket.WebSocketApp(wsUrl, on_message=self.on_message, on_error=self.on_error, on_close=self.on_close, on_open=self.on_open)
         ws.appid = self.xunfei_app_id
         ws.imagedata = base64.b64decode(base64_image)
         text = [{"role": "user", "content": base64_image, "content_type": "image"}]
-        ws.question = self.checklen(self.getText("user",prompt))
+        ws.question = self.checklen(self.getText("user",image_prompt))
         ws.run_forever(sslopt={"cert_reqs": ssl.CERT_NONE})
 
 
