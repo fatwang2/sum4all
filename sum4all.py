@@ -136,6 +136,8 @@ class sum4all(Plugin):
         # 将用户信息存储在params_cache中
         if user_id not in self.params_cache:
             self.params_cache[user_id] = {}
+            self.params_cache[user_id]['image_sum_quota'] = 0
+            self.params_cache[user_id]['image_prompt'] = self.image_prompt
             logger.info('Added new user to params_cache.')
 
         if user_id in self.params_cache and ('last_file_content' in self.params_cache[user_id] or 'last_image_base64' in self.params_cache[user_id] or 'last_url' in self.params_cache[user_id]):
@@ -172,8 +174,6 @@ class sum4all(Plugin):
                 if match:
                     self.params_cache[user_id]['image_prompt'] = content[len(self.image_sum_trigger):]
                     tip = f"\n使用的提示词为:{self.params_cache[user_id]['image_prompt'] }"
-                else:  
-                    self.params_cache[user_id]['image_prompt'] = self.image_prompt
 
                 self.params_cache[user_id]['image_sum_quota'] = 1
                 reply = Reply(type=ReplyType.TEXT, content="已开启单张识图模式，您接下来第一张图片会进行识别。"+ tip)
@@ -183,7 +183,6 @@ class sum4all(Plugin):
             elif content.startswith(self.image_sum_batch_trigger) and self.image_sum:
                 # Call new function to handle search operation
                 self.params_cache[user_id]['image_sum_quota'] = 5
-                self.params_cache[user_id]['image_prompt'] = self.image_prompt
                 reply = Reply(type=ReplyType.TEXT, content="已开启批量识图模式，您接下来5张图片都会进行识别。")
                 e_context["reply"] = reply
                 e_context.action = EventAction.BREAK_PASS
