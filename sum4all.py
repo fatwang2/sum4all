@@ -133,16 +133,17 @@ class sum4all(Plugin):
             self.call_service(content, e_context, "search")
             return
         
+        # 将用户信息存储在params_cache中
+        if user_id not in self.params_cache:
+            self.params_cache[user_id] = {}
+            logger.info('Added new user to params_cache.')
+
         if user_id in self.params_cache and ('last_file_content' in self.params_cache[user_id] or 'last_image_base64' in self.params_cache[user_id] or 'last_url' in self.params_cache[user_id]):
             if content.startswith(self.qa_prefix):
                 logger.info('Content starts with the qa_prefix.')
                 # 去除关键词和紧随其后的空格
                 new_content = content[len(self.qa_prefix):]
-                # 将用户的问题存储在params_cache中
-                if user_id not in self.params_cache:
-                    self.params_cache[user_id] = {}
-                    logger.info('Added new user to params_cache.')
-
+                
                 self.params_cache[user_id]['prompt'] = new_content
                 self.params_cache[user_id]['image_prompt'] = new_content
                 logger.info('params_cache for user has been successfully updated.')   
@@ -164,10 +165,6 @@ class sum4all(Plugin):
 
         if e_context['context'].type == ContextType.TEXT:
             if content.startswith(self.image_sum_trigger) and self.image_sum:
-                if user_id not in self.params_cache:
-                    self.params_cache[user_id] = {}
-                    logger.info('Added new user to params_cache.')
-
                 # Call new function to handle search operation
                 pattern = self.image_sum_trigger + r"\s(.+)"
                 match = re.match(pattern, content)
@@ -184,10 +181,6 @@ class sum4all(Plugin):
                 e_context.action = EventAction.BREAK_PASS
 
             elif content.startswith(self.image_sum_batch_trigger) and self.image_sum:
-                if user_id not in self.params_cache:
-                    self.params_cache[user_id] = {}
-                    logger.info('Added new user to params_cache.')
-
                 # Call new function to handle search operation
                 self.params_cache[user_id]['image_sum_quota'] = 5
                 self.params_cache[user_id]['image_prompt'] = self.image_prompt
@@ -196,10 +189,6 @@ class sum4all(Plugin):
                 e_context.action = EventAction.BREAK_PASS
 
             elif content.startswith(self.close_image_sum_trigger) and self.image_sum:
-                if user_id not in self.params_cache:
-                    self.params_cache[user_id] = {}
-                    logger.info('Added new user to params_cache.')
-                    
                 # Call new function to handle search operation
                 self.params_cache[user_id]['image_sum_quota'] = 0
                 reply = Reply(type=ReplyType.TEXT, content="已关闭识图模式，您的图片不再继续进行识别。")
@@ -252,7 +241,7 @@ class sum4all(Plugin):
                 # 将图片路径转换为Base64编码的字符串
                 base64_image = self.encode_image_to_base64(image_path)
                 # 更新params_cache中的last_image_path
-                self.params_cache[user_id] = {}
+                # self.params_cache[user_id] = {}
                 self.params_cache[user_id]['last_image_base64'] = base64_image
                 logger.info('Updated last_image_base64 in params_cache for user.')
                 if self.image_service == "xunfei":
@@ -743,6 +732,7 @@ class sum4all(Plugin):
         user_id = msg.from_user_id
         user_params = self.params_cache.get(user_id, {})
         image_prompt = user_params.get('image_prompt', self.image_prompt)
+        logger.info("image prompt :" + image_prompt)
 
         headers = {
             "Content-Type": "application/json",
