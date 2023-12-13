@@ -82,6 +82,7 @@ class sum4all(Plugin):
             self.outputLanguage = self.config.get("outputLanguage","zh-CN")
             self.group_sharing = self.config.get("group_sharing","true")
             self.group_image_sum = self.config.get("group_image_sum","true")
+            self.group_url_sum = self.config.get("group_url_sum","true")
             self.opensum_key = self.config.get("opensum_key","")
             self.open_ai_api_key = self.config.get("open_ai_api_key","")
             self.model = self.config.get("model","gpt-3.5-turbo")
@@ -93,6 +94,7 @@ class sum4all(Plugin):
             self.search_sum = self.config.get("search_sum","")
             self.file_sum = self.config.get("file_sum","")
             self.image_sum = self.config.get("image_sum","")
+            self.url_sum = self.config.get("url_sum","")
             self.perplexity_key = self.config.get("perplexity_key","")
             self.search_service = self.config.get("search_service","")
             self.image_service = self.config.get("image_service","")
@@ -101,6 +103,7 @@ class sum4all(Plugin):
             self.xunfei_api_secret = self.config.get("xunfei_api_secret","")
             self.qa_prefix = self.config.get("qa_prefix","问")
             self.search_prefix = self.config.get("search_prefix","搜")
+            self.url_sum_trigger = self.config.get("url_sum_trigger", "读网页")
             self.image_sum_trigger = self.config.get("image_sum_trigger","识图")
             self.image_sum_batch_trigger = self.config.get("image_sum_batch_trigger","批量识图")
             self.close_image_sum_trigger = self.config.get("close_image_sum_trigger","关闭识图")
@@ -137,6 +140,7 @@ class sum4all(Plugin):
         if user_id not in self.params_cache:
             self.params_cache[user_id] = {}
             self.params_cache[user_id]['image_sum_quota'] = 0
+            self.params_cache[user_id]['url_sum_quota'] = 0
             logger.info('Added new user to params_cache.')
 
         if user_id in self.params_cache and ('last_file_content' in self.params_cache[user_id] or 'last_image_base64' in self.params_cache[user_id] or 'last_url' in self.params_cache[user_id]):
@@ -169,15 +173,31 @@ class sum4all(Plugin):
                 # Call new function to handle search operation
                 pattern = self.image_sum_trigger + r"\s(.+)"
                 match = re.match(pattern, content)
-                tip = f"\n未检测到提示词，将使用系统默认提示词。\n自定义提示词的格式为：{self.image_sum_trigger}+空格+提示词"
+                tip = f"\n未检测到提示词，将使用系统默认提示词。\n\n💬自定义提示词的格式为：{self.image_sum_trigger}+空格+提示词"
                 if match:
                     self.params_cache[user_id]['image_prompt'] = content[len(self.image_sum_trigger):]
-                    tip = f"\n使用的提示词为:{self.params_cache[user_id]['image_prompt'] }"
+                    tip = f"\n\n💬使用的提示词为:{self.params_cache[user_id]['image_prompt'] }"
                 else:
                     self.params_cache[user_id]['image_prompt'] = self.image_prompt
 
                 self.params_cache[user_id]['image_sum_quota'] = 1
                 reply = Reply(type=ReplyType.TEXT, content="已开启单张识图模式，您接下来第一张图片会进行识别。"+ tip)
+                e_context["reply"] = reply
+                e_context.action = EventAction.BREAK_PASS
+
+            if content.startswith(self.url_sum_trigger) and self.url_sum:
+                # Call new function to handle search operation
+                pattern = self.url_sum_trigger + r"\s(.+)"
+                match = re.match(pattern, content)
+                tip = f"\n未检测到提示词，将使用系统默认提示词。\n\n💬自定义提示词的格式为：{self.url_sum_trigger}+空格+提示词"
+                if match:
+                    self.params_cache[user_id]['prompt'] = content[len(self.url_sum_trigger):]
+                    tip = f"\n\n💬使用的提示词为:{self.params_cache[user_id]['prompt'] }"
+                else:
+                    self.params_cache[user_id]['prompt'] = self.prompt
+
+                self.params_cache[user_id]['url_sum_quota'] = 1
+                reply = Reply(type=ReplyType.TEXT, content="已开启读取网页模式，将对网页里的内容进行总结。"+ tip)
                 e_context["reply"] = reply
                 e_context.action = EventAction.BREAK_PASS
 
@@ -245,6 +265,11 @@ class sum4all(Plugin):
                 # 更新params_cache中的last_image_path
                 # self.params_cache[user_id] = {}
                 self.params_cache[user_id]['last_image_base64'] = base64_image
+
+                # 确保追问模式中，识图以后，就只针对图片进行追问
+                if 'last_url' in self.params_cache[user_id]:
+                    del self.params_cache[user_id]['last_url']
+
                 logger.info('Updated last_image_base64 in params_cache for user.')
                 if self.image_service == "xunfei":
                     self.handle_xunfei_image(base64_image, e_context)
@@ -256,6 +281,10 @@ class sum4all(Plugin):
             os.remove(image_path)
             logger.info(f"文件 {image_path} 已删除")
         elif context.type == ContextType.SHARING:  #匹配卡片分享
+            if self.params_cache[user_id]['url_sum_quota'] < 1:
+                logger.info("on_handle_context: 当前用户读取网页配额不够，不进行识别")
+                return
+
             if unsupported_urls:  #匹配不支持总结的卡片
                 if isgroup:  ##群聊中忽略
                     return
@@ -266,12 +295,18 @@ class sum4all(Plugin):
                     e_context.action = EventAction.BREAK_PASS
             else:  #匹配支持总结的卡片
                 if isgroup:  #处理群聊总结
-                    if self.group_sharing:  #group_sharing = True进行总结，False则忽略。
+                    if self.group_url_sum:  #group_url_sum = True进行总结，False则忽略。
                         logger.info("[sum4all] Summary URL : %s", content)
                         # 更新params_cache中的last_url
                         # self.params_cache[user_id] = {}
                         self.params_cache[user_id]['last_url'] = content
                         logger.info('Updated last_url in params_cache for user.')
+                        # 确保追问模式中，读网页以后，只针对网页进行追问
+                        if 'last_image_base64' in self.params_cache[user_id]:
+                            del self.params_cache[user_id]['last_image_base64']
+
+                        self.params_cache[user_id]['url_sum_quota'] = self.params_cache[user_id]['url_sum_quota'] - 1
+                        logger.info(f"on_handle_context: 开始读网页，读取后剩余额度为：{self.params_cache[user_id]['url_sum_quota']}")
                         self.call_service(content, e_context, "sum")
                         return
                     else:
@@ -282,6 +317,12 @@ class sum4all(Plugin):
                     # self.params_cache[user_id] = {}
                     self.params_cache[user_id]['last_url'] = content
                     logger.info('Updated last_url in params_cache for user.')
+                    # 确保追问模式中，读网页以后，只针对网页进行追问
+                    if 'last_image_base64' in self.params_cache[user_id]:
+                        del self.params_cache[user_id]['last_image_base64']
+
+                    self.params_cache[user_id]['url_sum_quota'] = self.params_cache[user_id]['url_sum_quota'] - 1
+                    logger.info(f"on_handle_context: 开始读网页，读取后剩余额度为：{self.params_cache[user_id]['url_sum_quota']}")
                     self.call_service(content, e_context, "sum")
                     return
             
