@@ -181,7 +181,7 @@ class sum4all(Plugin):
                     self.params_cache[user_id]['image_prompt'] = self.image_prompt
 
                 self.params_cache[user_id]['image_sum_quota'] = 1
-                reply = Reply(type=ReplyType.TEXT, content="已开启单张识图模式，您接下来第一张图片会进行识别。"+ tip)
+                reply = Reply(type=ReplyType.TEXT, content="💡已开启单张识图模式，您接下来第一张图片会进行识别。"+ tip)
                 e_context["reply"] = reply
                 e_context.action = EventAction.BREAK_PASS
 
@@ -197,7 +197,7 @@ class sum4all(Plugin):
                     self.params_cache[user_id]['prompt'] = self.prompt
 
                 self.params_cache[user_id]['url_sum_quota'] = 1
-                reply = Reply(type=ReplyType.TEXT, content="已开启读取网页模式，将对网页里的内容进行总结。"+ tip)
+                reply = Reply(type=ReplyType.TEXT, content="📌已开启读取网页模式，将对网页里的内容进行总结。"+ tip)
                 e_context["reply"] = reply
                 e_context.action = EventAction.BREAK_PASS
 
@@ -206,7 +206,7 @@ class sum4all(Plugin):
                 self.params_cache[user_id]['image_sum_quota'] = 5
                 #批量识图中，自定义提示词意义不大，故直接使用默认提示词
                 self.params_cache[user_id]['image_prompt'] = self.image_prompt
-                reply = Reply(type=ReplyType.TEXT, content="已开启批量识图模式，您接下来5张图片都会进行识别。")
+                reply = Reply(type=ReplyType.TEXT, content="💡已开启批量识图模式，您接下来5张图片都会进行识别。")
                 e_context["reply"] = reply
                 e_context.action = EventAction.BREAK_PASS
 
