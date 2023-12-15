@@ -53,7 +53,7 @@ text =[{"role": "user", "content": "", "content_type":"image"}]
     name="sum4all",
     desire_priority=2,
     desc="A plugin for summarizing all things",
-    version="0.6.2",
+    version="0.6.3",
     author="fatwang2",
 )
 
@@ -78,6 +78,7 @@ class sum4all(Plugin):
             self.handlers[Event.ON_HANDLE_CONTEXT] = self.on_handle_context
             # 从配置中提取所需的设置
             self.sum_service = self.config.get("sum_service","")
+            self.gemini_key = self.config.get("gemini_key","")
             self.bibigpt_key = self.config.get("bibigpt_key","")
             self.outputLanguage = self.config.get("outputLanguage","zh-CN")
             self.group_sharing = self.config.get("group_sharing","true")
@@ -253,14 +254,14 @@ class sum4all(Plugin):
                 return
     def call_service(self, content, e_context, service_type):
         if service_type == "search":
-            if self.search_service == "openai" or self.search_service == "sum4all":
+            if self.search_service == "openai" or self.search_service == "sum4all" or self.search_service == "gemini":
                 self.handle_search(content, e_context)
             elif self.search_service == "perplexity":
                 self.handle_perplexity(content, e_context)
         elif service_type == "sum":
             if self.sum_service == "bibigpt":
                 self.handle_bibigpt(content, e_context)
-            elif self.sum_service == "openai" or self.sum_service == "sum4all":
+            elif self.sum_service == "openai" or self.sum_service == "sum4all" or self.search_service == "gemini":
                 self.handle_url(content, e_context)
             elif self.sum_service == "opensum":
                 self.handle_opensum(content, e_context)
@@ -292,6 +293,9 @@ class sum4all(Plugin):
             api_key = self.sum4all_key
             api_base = "https://pro.sum4all.site/v1"
             model = "sum4all"
+        elif self.sum_service == "gemini":
+            api_key = self.gemini_key
+            model = "gemini"
         else:
             logger.error(f"未知的sum_service配置: {self.sum_service}")
             return
@@ -424,6 +428,9 @@ class sum4all(Plugin):
             api_key = self.sum4all_key
             api_base = "https://pro.sum4all.site/v1"
             model = "sum4all"
+        elif self.search_service == "gemini":
+            api_key = self.gemini_key
+            model = "gemini"
         else:
             logger.error(f"未知的search_service配置: {self.search_service}")
             return
