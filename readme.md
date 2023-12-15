@@ -71,16 +71,17 @@
 
 各参数含义如下：
 ```
-"sum_service":"", #内容总结服务，openai、sum4all、bibigpt、opensum
+"sum_service":"", #内容总结服务，openai、sum4all、gemini、bibigpt、opensum
 "search_sum":"", #搜索开关，默认不开启，开启需改为 true，在微信端使用时，需要以“搜”字开头才会触发
 "file_sum": false, #文件总结开关，默认不开启，开启需改为 true，目前支持sum_service为openai和sum4all
 "image_sum": false, #图片总结开关，默认不开启，开启需改为 true，目前支持sum_service为openai和xunfei
-"search_service":"", #搜索服务，目前支持sum_service为sum4all、openai和perplexity
+"search_service":"", #搜索服务，目前支持sum_service为sum4all、openai、gemini和perplexity
 "image_service":"", #图片总结服务，目前支持openai和xunfei
 "group_sharing": true, #是否支持群聊内的链接卡片、文件和图片
 "qa_prefix":"问", #追问提示词，以该词开头，才能触发追问
 "search_prefix":"搜", #搜索提示词，以该词开头，才能触发搜索
 "sum4all_key":"", #如选sum4all，则必填
+"gemini_key": "", #如选gemini，则必填
 "xunfei_app_id": "", #讯飞大模型appid，如图片总结服务选择xunfei，则必填
 "xunfei_api_key": "", #讯飞大模型apikey，如图片总结服务选择xunfei，则必填
 "xunfei_api_secret": "" #讯飞大模型apisecret，如图片总结服务选择xunfei，则必填

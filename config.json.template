@@ -9,6 +9,7 @@
   "image_service":"xunfei",
   "bibigpt_key": "",
   "sum4all_key": "",
+  "gemini_key": "",
   "perplexity_key":"",
   "group_sharing": true,
   "outputLanguage": "zh-CN",
