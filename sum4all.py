@@ -296,6 +296,7 @@ class sum4all(Plugin):
         elif self.sum_service == "gemini":
             api_key = self.gemini_key
             model = "gemini"
+            api_base = "https://generativelanguage.googleapis.com/v1beta/models"
         else:
             logger.error(f"未知的sum_service配置: {self.sum_service}")
             return
@@ -431,6 +432,8 @@ class sum4all(Plugin):
         elif self.search_service == "gemini":
             api_key = self.gemini_key
             model = "gemini"
+            api_base = "https://generativelanguage.googleapis.com/v1beta/models"
+
         else:
             logger.error(f"未知的search_service配置: {self.search_service}")
             return
