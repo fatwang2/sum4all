@@ -53,7 +53,7 @@ text =[{"role": "user", "content": "", "content_type":"image"}]
     name="sum4all",
     desire_priority=2,
     desc="A plugin for summarizing all things",
-    version="0.6.1",
+    version="0.6.2",
     author="fatwang2",
 )
 
@@ -253,7 +253,7 @@ class sum4all(Plugin):
                 return
     def call_service(self, content, e_context, service_type):
         if service_type == "search":
-            if self.search_service == "openai" or self.sum_service == "sum4all":
+            if self.search_service == "openai" or self.search_service == "sum4all":
                 self.handle_search(content, e_context)
             elif self.search_service == "perplexity":
                 self.handle_perplexity(content, e_context)
@@ -416,16 +416,16 @@ class sum4all(Plugin):
         e_context.action = EventAction.BREAK_PASS    
     def handle_search(self, content, e_context):
         # 根据sum_service的值选择API密钥和基础URL
-        if self.sum_service == "openai":
+        if self.search_service == "openai":
             api_key = self.open_ai_api_key
             api_base = self.open_ai_api_base
             model = self.model
-        elif self.sum_service == "sum4all":
+        elif self.search_service == "sum4all":
             api_key = self.sum4all_key
             api_base = "https://pro.sum4all.site/v1"
             model = "sum4all"
         else:
-            logger.error(f"未知的sum_service配置: {self.sum_service}")
+            logger.error(f"未知的search_service配置: {self.search_service}")
             return
         headers = {
             'Content-Type': 'application/json',
