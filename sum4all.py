@@ -577,22 +577,25 @@ class sum4all(Plugin):
             response = requests.post(api_url, headers=headers, data=json.dumps(data))
             response.raise_for_status()
             response_data = response.json()
-            # 添加日志以打印响应数据
-            logger.info(f"Response data: {response_data}")
+            
             # 解析 JSON 并获取 content
             if model == "gemini":
                 if "candidates" in response_data and len(response_data["candidates"]) > 0:
                     first_candidate = response_data["candidates"][0]
-                    if "content" in first_candidate and "parts" in first_candidate["content"] and len(first_candidate["content"]["parts"]) > 0:
-                        response_content = first_candidate["content"]["parts"][0]["text"].strip()  # 获取响应内容
-                        logger.info(f"Gemini API response content")  # 记录响应内容
-                        reply_content = response_content.replace("\\n", "\n")  # 替换 \\n 为 \n
+                    if "content" in first_candidate:
+                        if "parts" in first_candidate["content"] and len(first_candidate["content"]["parts"]) > 0:
+                            response_content = first_candidate["content"]["parts"][0]["text"].strip()  # 获取响应内容
+                            logger.info(f"Gemini API response content: {response_content}")  # 记录响应内容
+                            reply_content = response_content.replace("\\n", "\n")  # 替换 \\n 为 \n
+                        else:
+                            logger.error("Parts not found in the Gemini API response content")
+                            reply_content = "Parts not found in the Gemini API response content"
                     else:
-                        logger.error("Content not found in the Gemini API response")
-                        reply_content = "Content not found in the Gemini API response"
+                        logger.error("Content not found in the Gemini API response candidate")
+                        reply_content = "Content not found in the Gemini API response candidate"
                 else:
                     logger.error("No candidates available in the Gemini API response")
-                    reply_content = "No candidates available in the Gemini API response"            
+                    reply_content = "No candidates available in the Gemini API response"        
             else:
                 if "choices" in response_data and len(response_data["choices"]) > 0:
                     first_choice = response_data["choices"][0]
@@ -788,13 +791,11 @@ class sum4all(Plugin):
         e_context["reply"] = reply
         e_context.action = EventAction.BREAK_PASS
     def handle_gemini_image(self, base64_image, e_context):
-        logger.info("handle_openai_image_response: 解析Gemini图像处理API的响应")
+        logger.info("handle_gemini_image: 解析Gemini图像处理API的响应")
         msg: ChatMessage = e_context["context"]["msg"]
         user_id = msg.from_user_id
         user_params = self.params_cache.get(user_id, {})
         prompt = user_params.get('prompt', '先全局分析图片的主要内容，并按照逻辑分层次、段落，提炼出5个左右图片中的精华信息、关键要点，生动地向读者描述图片的主要内容。注意排版、换行、emoji、标签的合理搭配，清楚地展现图片讲了什么')
-
-        
         payload = {
             "contents": [
                 {
@@ -819,7 +820,8 @@ class sum4all(Plugin):
             response = requests.post(f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent?key={self.gemini_key}", headers=headers, json=payload)
             response.raise_for_status()
             response_json = response.json()
-            reply_content = response_json.get('text', 'No text found in the response')
+            # 提取响应中的文本内容
+            reply_content = response_json.get('candidates', [{}])[0].get('content', {}).get('parts', [{}])[0].get('text', 'No text found in the response')
         except Exception as e:
             reply_content = f"An error occurred while processing Gemini API response: {e}"
 
