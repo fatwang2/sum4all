@@ -9,7 +9,6 @@ from plugins import *
 from common.log import logger
 from common.expired_dict import ExpiredDict
 import os
-import threading
 from docx import Document
 import markdown
 import tiktoken
@@ -53,7 +52,7 @@ text =[{"role": "user", "content": "", "content_type":"image"}]
     name="sum4all",
     desire_priority=2,
     desc="A plugin for summarizing all things",
-    version="0.6.3",
+    version="0.6.4",
     author="fatwang2",
 )
 
@@ -201,8 +200,10 @@ class sum4all(Plugin):
                 logger.info('Updated last_image_base64 in params_cache for user.')
                 if self.image_service == "xunfei":
                     self.handle_xunfei_image(base64_image, e_context)
-                else:
+                elif self.image_service == "openai":
                     self.handle_openai_image(base64_image, e_context)
+                elif self.image_service == "gemini":
+                    self.handle_gemini_image(base64_image, e_context)
             else:
                 logger.info("图片总结功能已禁用，不对图片内容进行处理")
             # 删除文件
@@ -296,7 +297,7 @@ class sum4all(Plugin):
         elif self.sum_service == "gemini":
             api_key = self.gemini_key
             model = "gemini"
-            api_base = "https://generativelanguage.googleapis.com/v1beta/models"
+            api_base = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key="
         else:
             logger.error(f"未知的sum_service配置: {self.sum_service}")
             return
@@ -345,7 +346,7 @@ class sum4all(Plugin):
 
         reply = Reply()
         reply.type = ReplyType.TEXT
-        reply.content = f"{reply_content}\n\n💬5min内输入“{self.qa_prefix}+具体问题”，可继续追问"             
+        reply.content = f"{remove_markdown(reply_content)}\n💬5min内输入{self.qa_prefix}+问题，可继续追问"             
         e_context["reply"] = reply
         e_context.action = EventAction.BREAK_PASS
     def handle_bibigpt(self, content, e_context):    
@@ -534,6 +535,10 @@ class sum4all(Plugin):
             api_key = self.sum4all_key
             api_base = "https://pro.sum4all.site/v1"
             model = "sum4all"
+        elif self.sum_service == "gemini":
+            api_key = self.gemini_key
+            model = "gemini"
+            api_base = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key="
         else:
             logger.error(f"未知的sum_service配置: {self.sum_service}")
             return
@@ -541,35 +546,63 @@ class sum4all(Plugin):
         user_id = msg.from_user_id
         user_params = self.params_cache.get(user_id, {})
         prompt = user_params.get('prompt', self.prompt)
-        headers = {
-            'Content-Type': 'application/json',
-            'Authorization': f'Bearer {api_key}'
-        }
-        data = {
-            "model": model,
-            "messages": [
-                {"role": "system", "content": prompt},
-                {"role": "user", "content": content}
+        if model == "gemini":
+            headers = {
+                'Content-Type': 'application/json'
+            }
+            data = {
+            "contents": [
+                {"role": "user", "parts": [{"text": prompt}]},
+                {"role": "model", "parts": [{"text": ""}]},
+                {"role": "user", "parts": [{"text": content}]}
             ]
-        }
+            }
+            api_url = f"{api_base}{api_key}"
+        else:
+            headers = {
+                'Content-Type': 'application/json',
+                'Authorization': f'Bearer {api_key}'
+            }
+            data = {
+                "model": model,
+                "messages": [
+                    {"role": "system", "content": prompt},
+                    {"role": "user", "content": content}
+                ]
+            }
+            api_url = f"{api_base}/chat/completions"
         try:
-            response = requests.post(f"{api_base}/chat/completions", headers=headers, data=json.dumps(data))
+            response = requests.post(api_url, headers=headers, data=json.dumps(data))
             response.raise_for_status()
             response_data = response.json()
 
             # 解析 JSON 并获取 content
-            if "choices" in response_data and len(response_data["choices"]) > 0:
-                first_choice = response_data["choices"][0]
-                if "message" in first_choice and "content" in first_choice["message"]:
-                    response_content = first_choice["message"]["content"].strip()  # 获取响应内容
-                    logger.info(f"OpenAI API response content")  # 记录响应内容
-                    reply_content = response_content.replace("\\n", "\n")  # 替换 \\n 为 \n
+            if model == "gemini":
+                if "candidates" in response_data and len(response_data["candidates"]) > 0:
+                    first_candidate = response_data["candidates"][0]
+                    if "content" in first_candidate and "parts" in first_candidate["content"] and len(first_candidate["content"]["parts"]) > 0:
+                        response_content = first_candidate["content"]["parts"][0]["text"].strip()  # 获取响应内容
+                        logger.info(f"Gemini API response content")  # 记录响应内容
+                        reply_content = response_content.replace("\\n", "\n")  # 替换 \\n 为 \n
+                    else:
+                        logger.error("Content not found in the Gemini API response")
+                        reply_content = "Content not found in the Gemini API response"
                 else:
-                    logger.error("Content not found in the response")
-                    reply_content = "Content not found in the OpenAI API response"
+                    logger.error("No candidates available in the Gemini API response")
+                    reply_content = "No candidates available in the Gemini API response"            
             else:
-                logger.error("No choices available in the response")
-                reply_content = "No choices available in the OpenAI API response"
+                if "choices" in response_data and len(response_data["choices"]) > 0:
+                    first_choice = response_data["choices"][0]
+                    if "message" in first_choice and "content" in first_choice["message"]:
+                        response_content = first_choice["message"]["content"].strip()  # 获取响应内容
+                        logger.info(f"OpenAI API response content")  # 记录响应内容
+                        reply_content = response_content.replace("\\n", "\n")  # 替换 \\n 为 \n
+                    else:
+                        logger.error("Content not found in the response")
+                        reply_content = "Content not found in the OpenAI API response"
+                else:
+                    logger.error("No choices available in the response")
+                    reply_content = "No choices available in the OpenAI API response"
 
         except requests.exceptions.RequestException as e:
             logger.error(f"Error calling OpenAI API: {e}")
@@ -577,7 +610,7 @@ class sum4all(Plugin):
 
         reply = Reply()
         reply.type = ReplyType.TEXT
-        reply.content = f"{reply_content}\n\n💬5min内输入“{self.qa_prefix}+具体问题”，可继续追问" 
+        reply.content = f"{remove_markdown(reply_content)}\n💬5min内输入{self.qa_prefix}+问题，可继续追问" 
         e_context["reply"] = reply
         e_context.action = EventAction.BREAK_PASS
     def read_pdf(self, file_path):
@@ -748,10 +781,50 @@ class sum4all(Plugin):
 
         reply = Reply()
         reply.type = ReplyType.TEXT
+        reply.content = f"{remove_markdown(reply_content)}\n\n💬5min内输入{self.qa_prefix}+问题，可继续追问"  
+        e_context["reply"] = reply
+        e_context.action = EventAction.BREAK_PASS
+    def handle_gemini_image(self, base64_image, e_context):
+        logger.info("handle_openai_image_response: 解析Gemini图像处理API的响应")
+        msg: ChatMessage = e_context["context"]["msg"]
+        user_id = msg.from_user_id
+        user_params = self.params_cache.get(user_id, {})
+        prompt = user_params.get('prompt', '先全局分析图片的主要内容，并按照逻辑分层次、段落，提炼出5个左右图片中的精华信息、关键要点，生动地向读者描述图片的主要内容。注意排版、换行、emoji、标签的合理搭配，清楚地展现图片讲了什么')
+
+        
+        payload = {
+            "contents": [
+                {
+                    "parts": [
+                        {"text": prompt},
+                        {
+                            "inline_data": {
+                                "mime_type":"image/jpeg",
+                                "data": base64_image
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+
+        headers = {
+            "Content-Type": "application/json"
+        }
+
+        try:
+            response = requests.post(f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent?key={self.gemini_key}", headers=headers, json=payload)
+            response.raise_for_status()
+            response_json = response.json()
+            reply_content = response_json.get('text', 'No text found in the response')
+        except Exception as e:
+            reply_content = f"An error occurred while processing Gemini API response: {e}"
+
+        reply = Reply()
+        reply.type = ReplyType.TEXT
         reply.content = f"{remove_markdown(reply_content)}\n💬5min内输入{self.qa_prefix}+问题，可继续追问"  
         e_context["reply"] = reply
         e_context.action = EventAction.BREAK_PASS
-
     def handle_xunfei_image(self, base64_image, e_context):
         global text
         logger.info("handle_xunfei_image_response: 解析讯飞图像处理API的响应")
@@ -856,7 +929,7 @@ class sum4all(Plugin):
                 logger.info("XunFei Image API response content")  # 记录响应内容
                 reply = Reply()
                 reply.type = ReplyType.TEXT
-                reply.content = reply.content = f"{remove_markdown(self.ws_answer)}\n💬5min内输入{self.qa_prefix}+问题，可继续追问"
+                reply.content = reply.content = f"{remove_markdown(self.ws_answer)}\n\n💬5min内输入{self.qa_prefix}+问题，可继续追问"
                 e_context["reply"] = reply
                 e_context.action = EventAction.BREAK_PASS
                 ws.close()
@@ -894,8 +967,6 @@ class sum4all(Plugin):
         jsoncon["content"] = content
         text.append(jsoncon)
         return text
-
-
     def getlength(self, text):
         length = 0
         for content in text:
@@ -903,8 +974,6 @@ class sum4all(Plugin):
             leng = len(temp)
             length += leng
         return length
-
-
     def checklen(self, text):
         #print("text-content-tokens:", getlength(text[1:]))
         while (self.getlength(text[1:])> 8000):
