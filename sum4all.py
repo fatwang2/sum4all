@@ -26,10 +26,8 @@ import _thread as thread
 import datetime
 import hashlib
 import hmac
-import json
 from urllib.parse import urlparse
 import ssl
-from datetime import datetime
 from time import mktime
 from urllib.parse import urlencode
 from wsgiref.handlers import format_date_time
@@ -52,7 +50,7 @@ text =[{"role": "user", "content": "", "content_type":"image"}]
     name="sum4all",
     desire_priority=2,
     desc="A plugin for summarizing all things",
-    version="0.6.4",
+    version="0.6.5",
     author="fatwang2",
 )
 
@@ -75,36 +73,59 @@ class sum4all(Plugin):
                     raise Exception("config.json not found")
             # 设置事件处理函数
             self.handlers[Event.ON_HANDLE_CONTEXT] = self.on_handle_context
-            # 从配置中提取所需的设置
-            self.sum_service = self.config.get("sum_service","")
-            self.gemini_key = self.config.get("gemini_key","")
-            self.bibigpt_key = self.config.get("bibigpt_key","")
-            self.outputLanguage = self.config.get("outputLanguage","zh-CN")
-            self.group_sharing = self.config.get("group_sharing","true")
-            self.opensum_key = self.config.get("opensum_key","")
-            self.open_ai_api_key = self.config.get("open_ai_api_key","")
-            self.model = self.config.get("model","gpt-3.5-turbo")
-            self.open_ai_api_base = self.config.get("open_ai_api_base","https://api.openai.com/v1")
-            self.prompt = self.config.get("prompt","你是一个新闻专家，我会给你发一些网页内容，请你用简单明了的语言做总结。格式如下：📌总结\n一句话讲清楚整篇文章的核心观点，控制在30字左右。\n\n💡要点\n用数字序号列出来3-5个文章的核心内容，尽量使用emoji让你的表达更生动，请注意输出的内容不要有两个转义符")
-            self.search_prompt = self.config.get("search_prompt","你是一个信息检索专家，请你用简单明了的语言，对你收到的内容做总结。尽量使用emoji让你的表达更生动")
-            self.sum4all_key = self.config.get("sum4all_key","")
-            self.search_sum = self.config.get("search_sum","")
-            self.file_sum = self.config.get("file_sum","")
-            self.image_sum = self.config.get("image_sum","")
-            self.perplexity_key = self.config.get("perplexity_key","")
-            self.search_service = self.config.get("search_service","")
-            self.image_service = self.config.get("image_service","")
-            self.xunfei_app_id = self.config.get("xunfei_app_id","")
-            self.xunfei_api_key = self.config.get("xunfei_api_key","")
-            self.xunfei_api_secret = self.config.get("xunfei_api_secret","")
-            self.qa_prefix = self.config.get("qa_prefix","问")
-            self.search_prefix = self.config.get("search_prefix","搜")
             self.params_cache = ExpiredDict(300)
             self.host = urlparse(imageunderstanding_url).netloc
             self.path = urlparse(imageunderstanding_url).path
             self.ImageUnderstanding_url = imageunderstanding_url
             self.ws_context = dict()
             self.ws_answer = ""
+            
+            # 从配置中提取所需的设置
+            self.keys = self.config.get("keys", {})
+            self.url_sum = self.config.get("url_sum", {})
+            self.search_sum = self.config.get("search_sum", {})
+            self.file_sum = self.config.get("file_sum", {})
+            self.image_sum = self.config.get("image_sum", {})
+
+
+            self.sum4all_key = self.keys.get("sum4all_key", "")
+            self.gemini_key = self.keys.get("gemini_key", "")
+            self.bibigpt_key = self.keys.get("bibigpt_key", "")
+            self.outputLanguage = self.keys.get("outputLanguage", "zh-CN")
+            self.opensum_key = self.keys.get("opensum_key", "")
+            self.open_ai_api_key = self.keys.get("open_ai_api_key", "")
+            self.model = self.keys.get("model", "gpt-3.5-turbo")
+            self.open_ai_api_base = self.keys.get("open_ai_api_base", "https://api.openai.com/v1")
+            self.xunfei_app_id = self.keys.get("xunfei_app_id", "")
+            self.xunfei_api_key = self.keys.get("xunfei_api_key", "")
+            self.xunfei_api_secret = self.keys.get("xunfei_api_secret", "")
+            self.perplexity_key = self.keys.get("perplexity_key", "")
+
+            # 提取sum服务的配置
+            self.url_sum_enabled = self.url_sum.get("enabled", False)
+            self.url_sum_service = self.url_sum.get("service", "")
+            self.url_sum_group = self.url_sum.get("group", True)
+            self.url_sum_qa_prefix = self.url_sum.get("qa_prefix", "问")
+            self.url_sum_prompt = self.url_sum.get("prompt", "")
+
+            self.search_sum_enabled = self.search_sum.get("enabled", False)
+            self.search_sum_service = self.search_sum.get("service", "")
+            self.search_sum_group = self.search_sum.get("group", True)
+            self.search_sum_search_prefix = self.search_sum.get("search_prefix", "搜")
+            self.search_sum_prompt = self.search_sum.get("prompt", "")
+
+            self.file_sum_enabled = self.file_sum.get("enabled", False)
+            self.file_sum_service = self.file_sum.get("service", "")
+            self.file_sum_group = self.file_sum.get("group", True)
+            self.file_sum_qa_prefix = self.file_sum.get("qa_prefix", "问")
+            self.file_sum_prompt = self.file_sum.get("prompt", "")
+
+            self.image_sum_enabled = self.image_sum.get("enabled", False)
+            self.image_sum_service = self.image_sum.get("service", "")
+            self.image_sum_group = self.image_sum.get("group", True)
+            self.image_sum_qa_prefix = self.image_sum.get("qa_prefix", "问")
+            self.image_sum_prompt = self.image_sum.get("prompt", "")
+
             # 初始化成功日志
             logger.info("[sum4all] inited.")
         except Exception as e:
@@ -123,42 +144,43 @@ class sum4all(Plugin):
         unsupported_urls = re.search(r'.*finder\.video\.qq\.com.*|.*support\.weixin\.qq\.com/update.*|.*support\.weixin\.qq\.com/security.*|.*mp\.weixin\.qq\.com/mp/waerrpage.*', content)
 
             # 检查输入是否以"搜索前缀词" 开头
-        if content.startswith(self.search_prefix) and self.search_sum:
+        if content.startswith(self.search_sum_search_prefix) and self.file_sum_enabled:
             # Call new function to handle search operation
             self.call_service(content, e_context, "search")
             return
         
         if user_id in self.params_cache and ('last_file_content' in self.params_cache[user_id] or 'last_image_base64' in self.params_cache[user_id] or 'last_url' in self.params_cache[user_id]):
-            if content.startswith(self.qa_prefix):
-                logger.info('Content starts with the qa_prefix.')
+            # 如果存在最近一次处理的文件路径，触发文件理解函数
+            if 'last_file_content' in self.params_cache[user_id] and content.startswith(self.file_sum_qa_prefix):
+                logger.info('Content starts with the file_sum_qa_prefix.')
                 # 去除关键词和紧随其后的空格
-                new_content = content[len(self.qa_prefix):]
-                # 将用户的问题存储在params_cache中
-                if user_id not in self.params_cache:
-                    self.params_cache[user_id] = {}
-                    logger.info('Added new user to params_cache.')
-
+                new_content = content[len(self.file_sum_qa_prefix):]
                 self.params_cache[user_id]['prompt'] = new_content
-                logger.info('params_cache for user has been successfully updated.')   
-                # 如果存在最近一次处理的文件路径，触发文件理解函数
-                if 'last_file_content' in self.params_cache[user_id]:
-                    logger.info('Last last_file_content found in params_cache for user.')            
-                    self.handle_file(self.params_cache[user_id]['last_file_content'], e_context)
-                # 如果存在最近一次处理的图片路径，触发图片理解函数
-                elif 'last_image_base64' in self.params_cache[user_id]:
-                    logger.info('Last image path found in params_cache for user.')            
-                    if self.image_service == "xunfei":
-                        self.handle_xunfei_image(self.params_cache[user_id]['last_image_base64'], e_context)
-                    elif self.image_service == "openai":
-                        self.handle_openai_image(self.params_cache[user_id]['last_image_base64'], e_context)
-                    elif self.image_service == "gemini":
-                        self.handle_gemini_image(self.params_cache[user_id]['last_image_base64'], e_context)
-                # 如果存在最近一次处理的URL，触发URL理解函数
-                elif 'last_url' in self.params_cache[user_id]:
-                    logger.info('Last URL found in params_cache for user.')            
-                    self.call_service(self.params_cache[user_id]['last_url'], e_context ,"sum")
+                logger.info('params_cache for user has been successfully updated.')            
+                self.handle_file(self.params_cache[user_id]['last_file_content'], e_context)
+            # 如果存在最近一次处理的图片路径，触发图片理解函数
+            elif 'last_image_base64' in self.params_cache[user_id] and content.startswith(self.image_sum_qa_prefix):
+                logger.info('Content starts with the image_sum_qa_prefix.')
+                # 去除关键词和紧随其后的空格
+                new_content = content[len(self.image_sum_qa_prefix):]
+                self.params_cache[user_id]['prompt'] = new_content
+                logger.info('params_cache for user has been successfully updated.')            
+                if self.image_sum_service == "xunfei":
+                    self.handle_xunfei_image(self.params_cache[user_id]['last_image_base64'], e_context)
+                elif self.image_sum_service == "openai":
+                    self.handle_openai_image(self.params_cache[user_id]['last_image_base64'], e_context)
+                elif self.image_sum_service == "gemini":
+                    self.handle_gemini_image(self.params_cache[user_id]['last_image_base64'], e_context)
+            # 如果存在最近一次处理的URL，触发URL理解函数
+            elif 'last_url' in self.params_cache[user_id] and content.startswith(self.url_sum_qa_prefix):
+                logger.info('Content starts with the url_sum_qa_prefix.')
+                # 去除关键词和紧随其后的空格
+                new_content = content[len(self.url_sum_qa_prefix):]
+                self.params_cache[user_id]['prompt'] = new_content
+                logger.info('params_cache for user has been successfully updated.')            
+                self.call_service(self.params_cache[user_id]['last_url'], e_context ,"sum")
         if context.type == ContextType.FILE:
-            if isgroup and not self.group_sharing:
+            if isgroup and not self.file_sum_group:
                 # 群聊中忽略处理文件
                 logger.info("群聊消息，文件处理功能已禁用")
                 return
@@ -169,7 +191,7 @@ class sum4all(Plugin):
             
             
             # 检查是否应该进行文件总结
-            if self.file_sum:
+            if self.file_sum_enabled:
                 # 更新params_cache中的last_file_content
                 self.params_cache[user_id] = {}
                 file_content = self.extract_content(file_path)
@@ -182,7 +204,7 @@ class sum4all(Plugin):
             os.remove(file_path)
             logger.info(f"文件 {file_path} 已删除")
         elif context.type == ContextType.IMAGE:
-            if isgroup and not self.group_sharing:
+            if isgroup and not self.image_sum_group:
                 # 群聊中忽略处理图片
                 logger.info("群聊消息，图片处理功能已禁用")
                 return
@@ -193,18 +215,18 @@ class sum4all(Plugin):
             
             
             # 检查是否应该进行图片总结
-            if self.image_sum:
+            if self.image_sum_enabled:
                 # 将图片路径转换为Base64编码的字符串
                 base64_image = self.encode_image_to_base64(image_path)
                 # 更新params_cache中的last_image_path
                 self.params_cache[user_id] = {}
                 self.params_cache[user_id]['last_image_base64'] = base64_image
                 logger.info('Updated last_image_base64 in params_cache for user.')
-                if self.image_service == "xunfei":
+                if self.image_sum_service == "xunfei":
                     self.handle_xunfei_image(base64_image, e_context)
-                elif self.image_service == "openai":
+                elif self.image_sum_service == "openai":
                     self.handle_openai_image(base64_image, e_context)
-                elif self.image_service == "gemini":
+                elif self.image_sum_service == "gemini":
                     self.handle_gemini_image(base64_image, e_context)
             else:
                 logger.info("图片总结功能已禁用，不对图片内容进行处理")
@@ -222,7 +244,7 @@ class sum4all(Plugin):
                     e_context.action = EventAction.BREAK_PASS
             else:  #匹配支持总结的卡片
                 if isgroup:  #处理群聊总结
-                    if self.group_sharing:  #group_sharing = True进行总结，False则忽略。
+                    if self.url_sum_group:  #group_sharing = True进行总结，False则忽略。
                         logger.info("[sum4all] Summary URL : %s", content)
                         # 更新params_cache中的last_url
                         self.params_cache[user_id] = {}
@@ -257,16 +279,16 @@ class sum4all(Plugin):
                 return
     def call_service(self, content, e_context, service_type):
         if service_type == "search":
-            if self.search_service == "openai" or self.search_service == "sum4all" or self.search_service == "gemini":
+            if self.search_sum_service == "openai" or self.search_sum_service == "sum4all" or self.search_sum_service == "gemini":
                 self.handle_search(content, e_context)
-            elif self.search_service == "perplexity":
+            elif self.search_sum_service == "perplexity":
                 self.handle_perplexity(content, e_context)
         elif service_type == "sum":
-            if self.sum_service == "bibigpt":
+            if self.url_sum_service == "bibigpt":
                 self.handle_bibigpt(content, e_context)
-            elif self.sum_service == "openai" or self.sum_service == "sum4all" or self.search_service == "gemini":
+            elif self.url_sum_service == "openai" or self.url_sum_service == "sum4all" or self.url_sum_service == "gemini":
                 self.handle_url(content, e_context)
-            elif self.sum_service == "opensum":
+            elif self.url_sum_service == "opensum":
                 self.handle_opensum(content, e_context)
  
         
@@ -288,26 +310,26 @@ class sum4all(Plugin):
     def handle_url(self, content, e_context):
         logger.info('Handling Sum4All request...')
         # 根据sum_service的值选择API密钥和基础URL
-        if self.sum_service == "openai":
+        if self.url_sum_service == "openai":
             api_key = self.open_ai_api_key
             api_base = self.open_ai_api_base
             model = self.model
-        elif self.sum_service == "sum4all":
+        elif self.url_sum_service == "sum4all":
             api_key = self.sum4all_key
             api_base = "https://pro.sum4all.site/v1"
             model = "sum4all"
-        elif self.sum_service == "gemini":
+        elif self.url_sum_service == "gemini":
             api_key = self.gemini_key
             model = "gemini"
             api_base = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key="
         else:
-            logger.error(f"未知的sum_service配置: {self.sum_service}")
+            logger.error(f"未知的sum_service配置: {self.url_sum_service}")
             return
         
         msg: ChatMessage = e_context["context"]["msg"]
         user_id = msg.from_user_id
         user_params = self.params_cache.get(user_id, {})
-        prompt = user_params.get('prompt', self.prompt)
+        prompt = user_params.get('prompt', self.url_sum_prompt)
         headers = {
             'Content-Type': 'application/json',
             'Authorization': f'Bearer {api_key}'
@@ -348,7 +370,7 @@ class sum4all(Plugin):
 
         reply = Reply()
         reply.type = ReplyType.TEXT
-        reply.content = f"{remove_markdown(reply_content)}\n\n💬5min内输入{self.qa_prefix}+问题，可继续追问"             
+        reply.content = f"{remove_markdown(reply_content)}\n\n💬5min内输入{self.url_sum_qa_prefix}+问题，可继续追问"             
         e_context["reply"] = reply
         e_context.action = EventAction.BREAK_PASS
     def handle_bibigpt(self, content, e_context):    
@@ -424,21 +446,21 @@ class sum4all(Plugin):
         e_context.action = EventAction.BREAK_PASS    
     def handle_search(self, content, e_context):
         # 根据sum_service的值选择API密钥和基础URL
-        if self.search_service == "openai":
+        if self.search_sum_service == "openai":
             api_key = self.open_ai_api_key
             api_base = self.open_ai_api_base
             model = self.model
-        elif self.search_service == "sum4all":
+        elif self.search_sum_service == "sum4all":
             api_key = self.sum4all_key
             api_base = "https://pro.sum4all.site/v1"
             model = "sum4all"
-        elif self.search_service == "gemini":
+        elif self.search_sum_service == "gemini":
             api_key = self.gemini_key
             model = "gemini"
             api_base = "https://generativelanguage.googleapis.com/v1beta/models"
 
         else:
-            logger.error(f"未知的search_service配置: {self.search_service}")
+            logger.error(f"未知的search_service配置: {self.search_sum_service}")
             return
         headers = {
             'Content-Type': 'application/json',
@@ -446,7 +468,7 @@ class sum4all(Plugin):
         }
         payload = json.dumps({
             "ur": content,
-            "prompt": self.search_prompt,
+            "prompt": self.search_sum_prompt,
             "model": model,
             "base": api_base
         })
@@ -495,7 +517,7 @@ class sum4all(Plugin):
         data = {
             "model": "pplx-7b-online",
             "messages": [
-                {"role": "system", "content": self.search_prompt},
+                {"role": "system", "content": self.search_sum_prompt},
                 {"role": "user", "content": content}
         ]
         }
@@ -529,25 +551,25 @@ class sum4all(Plugin):
     def handle_file(self, content, e_context):
         logger.info("handle_file: 向LLM发送内容总结请求")
         # 根据sum_service的值选择API密钥和基础URL
-        if self.sum_service == "openai":
+        if self.file_sum_service == "openai":
             api_key = self.open_ai_api_key
             api_base = self.open_ai_api_base
             model = self.model
-        elif self.sum_service == "sum4all":
+        elif self.file_sum_service == "sum4all":
             api_key = self.sum4all_key
             api_base = "https://pro.sum4all.site/v1"
             model = "sum4all"
-        elif self.sum_service == "gemini":
+        elif self.file_sum_service == "gemini":
             api_key = self.gemini_key
             model = "gemini"
             api_base = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key="
         else:
-            logger.error(f"未知的sum_service配置: {self.sum_service}")
+            logger.error(f"未知的sum_service配置: {self.file_sum_service}")
             return
         msg: ChatMessage = e_context["context"]["msg"]
         user_id = msg.from_user_id
         user_params = self.params_cache.get(user_id, {})
-        prompt = user_params.get('prompt', self.prompt)
+        prompt = user_params.get('prompt', self.file_sum_prompt)
         if model == "gemini":
             headers = {
                 'Content-Type': 'application/json'
@@ -616,7 +638,7 @@ class sum4all(Plugin):
 
         reply = Reply()
         reply.type = ReplyType.TEXT
-        reply.content = f"{remove_markdown(reply_content)}\n\n💬5min内输入{self.qa_prefix}+问题，可继续追问" 
+        reply.content = f"{remove_markdown(reply_content)}\n\n💬5min内输入{self.file_sum_qa_prefix}+问题，可继续追问" 
         e_context["reply"] = reply
         e_context.action = EventAction.BREAK_PASS
     def read_pdf(self, file_path):
@@ -787,7 +809,7 @@ class sum4all(Plugin):
 
         reply = Reply()
         reply.type = ReplyType.TEXT
-        reply.content = f"{remove_markdown(reply_content)}\n\n💬5min内输入{self.qa_prefix}+问题，可继续追问"  
+        reply.content = f"{remove_markdown(reply_content)}\n\n💬5min内输入{self.image_sum_qa_prefix}+问题，可继续追问"  
         e_context["reply"] = reply
         e_context.action = EventAction.BREAK_PASS
     def handle_gemini_image(self, base64_image, e_context):
@@ -827,7 +849,7 @@ class sum4all(Plugin):
 
         reply = Reply()
         reply.type = ReplyType.TEXT
-        reply.content = f"{remove_markdown(reply_content)}\n\n💬5min内输入{self.qa_prefix}+问题，可继续追问"  
+        reply.content = f"{remove_markdown(reply_content)}\n\n💬5min内输入{self.image_sum_qa_prefix}+问题，可继续追问"  
         e_context["reply"] = reply
         e_context.action = EventAction.BREAK_PASS
     def handle_xunfei_image(self, base64_image, e_context):
@@ -934,7 +956,7 @@ class sum4all(Plugin):
                 logger.info("XunFei Image API response content")  # 记录响应内容
                 reply = Reply()
                 reply.type = ReplyType.TEXT
-                reply.content = reply.content = f"{remove_markdown(self.ws_answer)}\n\n💬5min内输入{self.qa_prefix}+问题，可继续追问"
+                reply.content = reply.content = f"{remove_markdown(self.ws_answer)}\n\n💬5min内输入{self.image_sum_qa_prefix}+问题，可继续追问"
                 e_context["reply"] = reply
                 e_context.action = EventAction.BREAK_PASS
                 ws.close()

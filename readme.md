@@ -2,6 +2,8 @@
 [telegram频道 ](https://sum4all.site/telegram)
 
 ## 更新日志
+- V0.6.5，20231217，结构化配置文件config.json，支持更灵活的调整文件、图片、URL、搜索的配置，升级后需按照新格式配置
+- V0.6.4，20231216，文件、图像总结支持Google最新的Gemini模型
 - V0.6.2，20231216，链接、搜索总结支持Google最新的Gemini模型，目前免费
 - V0.6.1，20231215，修复搜索bug
 - V0.6.1，20231214，企业微信ntwork模式，支持链接卡片、文件、图片，注意需更新chatgpt-on-wechat到最新版
@@ -58,7 +60,7 @@
 |------|----------|------|----------|-----------|
 | OpenAI | 搜索、文件、图片、绝大部分网页文章 | 无需额外申请服务，舍得花钱的话，效果最可控 | [OpenAI](https://platform.openai.com/account/api-keys) \| [LinkAI代理](https://sum4all.site/linkai) | ![OpenAI](picture/openai.png) |
 | Sum4all | 搜索、文件、绝大部分网页文章 | 注册免费送1万token，邀请好友注册再各得5k，觉得好用的还可以注册Poe上的同名机器人 | [sum4all](https://sum4all.site/key) \| [Poe Sum4all机器人](https://sum4all.site/poe) | ![Sum4all](picture/sum4all.png) |
-| Gemini | 搜索、绝大部分网页文章 | Google最新大模型，免费 | [gemini](https://sum4all.site/google) | ![Gemini](picture/gemini.png) |
+| Gemini | 搜索、文件、图片、绝大部分网页文章 | Google最新大模型，免费 | [gemini](https://sum4all.site/google) | ![Gemini](picture/gemini.png) |
 | Perplexity | 搜索 | 国外的搜索总结服务，速度快，价格贵，自带大模型，需自行注册和付费 | [Perplexity](https://sum4all.site/perplexity) | ![Perplexity](picture/p.png) | ![Alt text](picture/WX20231201-004639@2x.png) |
 | 讯飞 | 图片 | 讯飞星火大模型的图片理解功能，免费200万token，随便用 | [xunfei](https://sum4all.site/xunfei) | ![Perplexity](picture/讯飞.png) |
 | BibiGPT | 文章、视频、音频 | 注册免费享有60min时长 | [BibiGPT](https://sum4all.site/bibigpt) | ![BibiGPT](picture/image-3.png) |
@@ -69,31 +71,52 @@
 - 服务器部署：复制插件目录的`config.json.template`文件,重命名为`config.json`，配置参数即可
 - docker部署：参考项目docker部署的插件使用，`config.json`内增加sum4all插件的配置参数，操作见 [docker插件配置](https://github.com/zhayujie/chatgpt-on-wechat#3-%E6%8F%92%E4%BB%B6%E4%BD%BF%E7%94%A8)
 
-各参数含义如下：
+配置文件含义如下：
 ```
-"sum_service":"", #内容总结服务，openai、sum4all、gemini、bibigpt、opensum
-"search_sum":"", #搜索开关，默认不开启，开启需改为 true，在微信端使用时，需要以“搜”字开头才会触发
-"file_sum": false, #文件总结开关，默认不开启，开启需改为 true，目前支持sum_service为openai和sum4all
-"image_sum": false, #图片总结开关，默认不开启，开启需改为 true，目前支持sum_service为openai和xunfei
-"search_service":"", #搜索服务，目前支持sum_service为sum4all、openai、gemini和perplexity
-"image_service":"", #图片总结服务，目前支持openai和xunfei
-"group_sharing": true, #是否支持群聊内的链接卡片、文件和图片
-"qa_prefix":"问", #追问提示词，以该词开头，才能触发追问
-"search_prefix":"搜", #搜索提示词，以该词开头，才能触发搜索
-"sum4all_key":"", #如选sum4all，则必填
-"gemini_key": "", #如选gemini，则必填
-"xunfei_app_id": "", #讯飞大模型appid，如图片总结服务选择xunfei，则必填
-"xunfei_api_key": "", #讯飞大模型apikey，如图片总结服务选择xunfei，则必填
-"xunfei_api_secret": "" #讯飞大模型apisecret，如图片总结服务选择xunfei，则必填
-"opensum_key": "", #如选opensum，则必填
-"open_ai_api_key": "", #如选openai，则必填
-"perplexity_key":"", #如搜索服务选perplexity，则必填
-"model": "gpt-3.5-turbo-1106", #openai模型
-"open_ai_api_base": "https://api.openai.com/v1", #openai请求地址
-"prompt": "你是一个新闻专家，我会给你发一些网页内容，请你用简单明了的语言做总结。第一部分是「📌总结」，一句话讲清楚整篇文章的核心观点，控制在50字左右，第二部分是「💡要点」，用数字序号列出来3-5个文章的核心内容。如果需要可以使用emoji让你的表达更生动" #openai内容总结prompt
-"search_prompt":"你是一个信息检索专家，请你用简单明了的语言，对你收到的内容做总结。尽量使用emoji让你的表达更生动" #搜索总结prompt
-"bibigpt_key": "", #如选bibigpt，则必填
-"outputLanguage": "zh-CN",#bibigpt的输出语言，默认中文，其他支持列表见下
+{
+  "url_sum": {
+    "enabled": true, #url总结服务开关
+    "service": "sum4all", #url总结服务，目前支持openai、sum4all、gemini、bibigpt、opensum
+    "group": true, #url总结群聊开关
+    "qa_prefix":"问", #ulr总结追问前缀词
+    "prompt": "" #ulr总结prompt
+  },
+  "search_sum": {
+    "enabled": false, #搜索总结服务开关
+    "service": "sum4all", #搜索总结服务，目前支持openai、sum4all、gemini、perplexity
+    "group": true, #搜索总结群聊开关
+    "search_prefix":"搜", #搜索总结前缀词
+    "prompt": "" #搜索总结prompt
+  },
+  "file_sum": {
+    "enabled": false, #文件总结服务开关
+    "service": "sum4all", #文件总结服务，目前支持openai、sum4all、gemini
+    "group": true, #文件总结群聊开关
+    "qa_prefix":"问", #文件总结追问前缀词
+    "prompt": "" #文件总结prompt
+  },
+  "image_sum": {
+    "enabled": false, #图片总结服务开关
+    "service": "gemini", #图片总结服务，目前支持openai、gemini、xunfei
+    "group": true, #图片总结群聊开关
+    "qa_prefix":"问", #图片总结追问前缀词
+    "prompt": "" #图片总结prompt
+  },
+  "keys": {
+    "sum4all_key": "", #如选sum4all，则必填
+    "gemini_key": "", #如选gemini，则必填
+    "perplexity_key": "", #如选perplexity，则必填
+    "open_ai_api_key": "", #如选openai，则必填
+    "model": "gpt-3.5-turbo", #openai模型
+    "open_ai_api_base": "https://api.openai.com/v1", #openai请求地址
+    "xunfei_app_id": "", #讯飞大模型appid，如选xunfei，则必填
+    "xunfei_api_key": "", #讯飞大模型apikey，如选xunfei，则必填
+    "xunfei_api_secret": "", #讯飞大模型apisecret，如选xunfei，则必填
+    "opensum_key": "", #如选opensum，则必填
+    "bibigpt_key": "", #如选bibigpt，则必填
+    "outputLanguage": "zh-CN" #bibigpt的输出语言，默认中文，其他支持列表见下
+  }
+}
 ```
 bibigpt输出语言支持列表：
 ```
@@ -111,12 +134,15 @@ bibigpt输出语言支持列表：
   हिंदी: 'hi-IN',
 ```
 
-
 ## 后续计划
-- 结构化配置文件
 - 支持输出总结图片
 - 支持视频号总结
 - 支持通过管理员指令切换内容总结服务、配置参数等
 
 ## 赞助地址
-![Alt text](picture/usdt.png)
+如果有幸帮到你，请随意打赏
+
+![Alt text](picture/微信.jpg)
+
+## 赞助名单
+- 兔子橙
