@@ -149,8 +149,10 @@ class sum4all(Plugin):
                     logger.info('Last image path found in params_cache for user.')            
                     if self.image_service == "xunfei":
                         self.handle_xunfei_image(self.params_cache[user_id]['last_image_base64'], e_context)
-                    else:
+                    elif self.image_service == "openai":
                         self.handle_openai_image(self.params_cache[user_id]['last_image_base64'], e_context)
+                    elif self.image_service == "gemini":
+                        self.handle_gemini_image(self.params_cache[user_id]['last_image_base64'], e_context)
                 # 如果存在最近一次处理的URL，触发URL理解函数
                 elif 'last_url' in self.params_cache[user_id]:
                     logger.info('Last URL found in params_cache for user.')            
@@ -346,7 +348,7 @@ class sum4all(Plugin):
 
         reply = Reply()
         reply.type = ReplyType.TEXT
-        reply.content = f"{remove_markdown(reply_content)}\n💬5min内输入{self.qa_prefix}+问题，可继续追问"             
+        reply.content = f"{remove_markdown(reply_content)}\n\n💬5min内输入{self.qa_prefix}+问题，可继续追问"             
         e_context["reply"] = reply
         e_context.action = EventAction.BREAK_PASS
     def handle_bibigpt(self, content, e_context):    
@@ -525,7 +527,7 @@ class sum4all(Plugin):
         help_text = "输入url/分享链接/搜索关键词，直接为你总结\n"
         return help_text
     def handle_file(self, content, e_context):
-        logger.info("handle_file: 向OpenAI发送内容总结请求")
+        logger.info("handle_file: 向LLM发送内容总结请求")
         # 根据sum_service的值选择API密钥和基础URL
         if self.sum_service == "openai":
             api_key = self.open_ai_api_key
@@ -575,7 +577,8 @@ class sum4all(Plugin):
             response = requests.post(api_url, headers=headers, data=json.dumps(data))
             response.raise_for_status()
             response_data = response.json()
-
+            # 添加日志以打印响应数据
+            logger.info(f"Response data: {response_data}")
             # 解析 JSON 并获取 content
             if model == "gemini":
                 if "candidates" in response_data and len(response_data["candidates"]) > 0:
@@ -610,7 +613,7 @@ class sum4all(Plugin):
 
         reply = Reply()
         reply.type = ReplyType.TEXT
-        reply.content = f"{remove_markdown(reply_content)}\n💬5min内输入{self.qa_prefix}+问题，可继续追问" 
+        reply.content = f"{remove_markdown(reply_content)}\n\n💬5min内输入{self.qa_prefix}+问题，可继续追问" 
         e_context["reply"] = reply
         e_context.action = EventAction.BREAK_PASS
     def read_pdf(self, file_path):
@@ -822,7 +825,7 @@ class sum4all(Plugin):
 
         reply = Reply()
         reply.type = ReplyType.TEXT
-        reply.content = f"{remove_markdown(reply_content)}\n💬5min内输入{self.qa_prefix}+问题，可继续追问"  
+        reply.content = f"{remove_markdown(reply_content)}\n\n💬5min内输入{self.qa_prefix}+问题，可继续追问"  
         e_context["reply"] = reply
         e_context.action = EventAction.BREAK_PASS
     def handle_xunfei_image(self, base64_image, e_context):
