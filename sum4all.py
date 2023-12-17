@@ -830,7 +830,7 @@ class sum4all(Plugin):
                         {"text": prompt},
                         {
                             "inline_data": {
-                                "mime_type":"image/*",
+                                "mime_type":"image/png",
                                 "data": base64_image
                             }
                         }
