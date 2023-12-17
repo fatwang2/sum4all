@@ -546,7 +546,7 @@ class sum4all(Plugin):
         e_context["reply"] = reply
         e_context.action = EventAction.BREAK_PASS
     def get_help_text(self, **kwargs):
-        help_text = "输入url/分享链接/搜索关键词，直接为你总结\n"
+        help_text = "为你总结一切，发送链接、图片、文件，或直接搜索，一切都能为你总结\n"
         return help_text
     def handle_file(self, content, e_context):
         logger.info("handle_file: 向LLM发送内容总结请求")
@@ -825,7 +825,7 @@ class sum4all(Plugin):
                         {"text": prompt},
                         {
                             "inline_data": {
-                                "mime_type":"image/jpeg",
+                                "mime_type":"image/*",
                                 "data": base64_image
                             }
                         }
