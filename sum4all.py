@@ -573,7 +573,7 @@ class sum4all(Plugin):
         if model == "gemini":
             headers = {
                 'Content-Type': 'application/json',
-                'x-goog-api-key': {api_key}
+                'x-goog-api-key': api_key
             }
             data = {
             "contents": [
@@ -844,7 +844,7 @@ class sum4all(Plugin):
 
         headers = {
             "Content-Type": "application/json",
-            'x-goog-api-key': {api_key}
+            "x-goog-api-key": api_key
         }
 
         try:
