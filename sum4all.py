@@ -562,7 +562,7 @@ class sum4all(Plugin):
         elif self.file_sum_service == "gemini":
             api_key = self.gemini_key
             model = "gemini"
-            api_base = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key="
+            api_base = "https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent"
         else:
             logger.error(f"未知的sum_service配置: {self.file_sum_service}")
             return
@@ -572,16 +572,20 @@ class sum4all(Plugin):
         prompt = user_params.get('prompt', self.file_sum_prompt)
         if model == "gemini":
             headers = {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                'x-goog-api-key': {api_key}
             }
             data = {
             "contents": [
                 {"role": "user", "parts": [{"text": prompt}]},
                 {"role": "model", "parts": [{"text": ""}]},
                 {"role": "user", "parts": [{"text": content}]}
-            ]
+            ],
+            "generationConfig": {
+                "maxOutputTokens": 800
             }
-            api_url = f"{api_base}{api_key}"
+            }
+            api_url = api_base
         else:
             headers = {
                 'Content-Type': 'application/json',
@@ -818,6 +822,7 @@ class sum4all(Plugin):
         user_id = msg.from_user_id
         user_params = self.params_cache.get(user_id, {})
         prompt = user_params.get('prompt', self.image_sum_prompt)
+        api_key = self.gemini_key
         payload = {
             "contents": [
                 {
@@ -825,21 +830,25 @@ class sum4all(Plugin):
                         {"text": prompt},
                         {
                             "inline_data": {
-                                "mime_type":"image/jpeg",
+                                "mime_type":"image/*",
                                 "data": base64_image
                             }
                         }
                     ]
                 }
-            ]
+            ],
+            "generationConfig": {
+                "maxOutputTokens": 800
+            }
         }
 
         headers = {
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
+            'x-goog-api-key': {api_key}
         }
 
         try:
-            response = requests.post(f"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro-vision:generateContent?key={self.gemini_key}", headers=headers, json=payload)
+            response = requests.post(f"https://generativelanguage.googleapis.com/v1/models/gemini-pro-vision:generateContent", headers=headers, json=payload)
             response.raise_for_status()
             response_json = response.json()
             # 提取响应中的文本内容
