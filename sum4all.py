@@ -32,7 +32,7 @@ import ssl
 from time import mktime
 from urllib.parse import urlencode
 from wsgiref.handlers import format_date_time
-import websocket  # 使用websocket_client
+import websocket  
 
 EXTENSION_TO_TYPE = {
     'pdf': 'pdf',
@@ -51,7 +51,7 @@ text =[{"role": "user", "content": "", "content_type":"image"}]
     name="sum4all",
     desire_priority=2,
     desc="A plugin for summarizing all things",
-    version="0.6.5",
+    version="0.6.6",
     author="fatwang2",
 )
 
@@ -166,9 +166,7 @@ class sum4all(Plugin):
                 new_content = content[len(self.image_sum_qa_prefix):]
                 self.params_cache[user_id]['prompt'] = new_content
                 logger.info('params_cache for user has been successfully updated.')            
-                if self.image_sum_service == "xunfei":
-                    self.handle_xunfei_image(self.params_cache[user_id]['last_image_base64'], e_context)
-                elif self.image_sum_service == "openai":
+                if self.image_sum_service in ["xunfei", "openai"]:
                     self.handle_openai_image(self.params_cache[user_id]['last_image_base64'], e_context)
                 elif self.image_sum_service == "gemini":
                     self.handle_gemini_image(self.params_cache[user_id]['last_image_base64'], e_context)
@@ -223,9 +221,7 @@ class sum4all(Plugin):
                 self.params_cache[user_id] = {}
                 self.params_cache[user_id]['last_image_base64'] = base64_image
                 logger.info('Updated last_image_base64 in params_cache for user.')
-                if self.image_sum_service == "xunfei":
-                    self.handle_xunfei_image(base64_image, e_context)
-                elif self.image_sum_service == "openai":
+                if self.image_sum_service in ["xunfei", "openai"]:
                     self.handle_openai_image(base64_image, e_context)
                 elif self.image_sum_service == "gemini":
                     self.handle_gemini_image(base64_image, e_context)
@@ -756,33 +752,45 @@ class sum4all(Plugin):
         with open(image_path, "rb") as image_file:
             return base64.b64encode(image_file.read()).decode('utf-8')
     # Function to handle OpenAI image processing
-    def handle_openai_image(self, base64_image, e_context):
-        logger.info("handle_openai_image_response: 解析OpenAI图像处理API的响应")
+    def handle_image(self, base64_image, e_context):
+        logger.info("handle_image_response: 解析OpenAI图像处理API的响应")
         msg: ChatMessage = e_context["context"]["msg"]
         user_id = msg.from_user_id
         user_params = self.params_cache.get(user_id, {})
         prompt = user_params.get('prompt', self.image_sum_prompt)
 
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.open_ai_api_key}"
-        }
+        if self.image_sum_service == 'openai':
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {self.open_ai_api_key}"
+            }
+            api_url = f"{self.open_ai_api_base}/chat/completions"
+            model = "gpt-4-vision-preview"
+        elif self.image_sum_service == 'xunfei':
+            headers = {
+                "Content-Type": "application/json",
+                "X_APP_ID": self.xunfei_app_id,
+                "X_API_SECRET": self.xunfei_api_secret,
+                "X_API_KEY": self.xunfei_api_key
+            }
+            api_url = "https://gateway.openai-cloud.com/v1/chat/completions"
+        model = "vision"
 
         payload = {
-            "model": "gpt-4-vision-preview",
+            "model": model,
             "messages": [
                 {
                     "role": "user",
                     "content": [
                         {
-                            "type": "text",
-                            "text": prompt
-                        },
-                        {
                             "type": "image_url",
                             "image_url": {
                                 "url": f"data:image/jpeg;base64,{base64_image}"
                             }
+                        },
+                        {
+                            "type": "text",
+                            "text": prompt
                         }
                     ]
                 }
@@ -791,7 +799,7 @@ class sum4all(Plugin):
         }
 
         try:
-            response = requests.post(f"{self.open_ai_api_base}/chat/completions", headers=headers, json=payload)
+            response = requests.post(api_url, headers=headers, json=payload)
             response.raise_for_status()  # 增加对HTTP错误的检查
             response_json = response.json()  # 定义response_json
             # 确保响应中有 'choices' 键并且至少有一个元素
@@ -800,17 +808,17 @@ class sum4all(Plugin):
                 if "message" in first_choice and "content" in first_choice["message"]:
                     # 从响应中提取 'content'
                     response_content = first_choice["message"]["content"].strip()
-                    logger.info("OpenAI API response content")  # 记录响应内容
+                    logger.info("LLM API response content")  # 记录响应内容
                     reply_content = response_content
                 else:
                     logger.error("Content not found in the response")
-                    reply_content = "Content not found in the OpenAI API response"
+                    reply_content = "Content not found in the LLM API response"
             else:
                 logger.error("No choices available in the response")
-                reply_content = "No choices available in the OpenAI API response"
+                reply_content = "No choices available in the LLM API response"
         except Exception as e:
-            logger.error(f"Error processing OpenAI API response: {e}")
-            reply_content = f"An error occurred while processing OpenAI API response: {e}"
+            logger.error(f"Error processing LLM API response: {e}")
+            reply_content = f"An error occurred while processing LLM API response: {e}"
 
         reply = Reply()
         reply.type = ReplyType.TEXT
