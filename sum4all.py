@@ -167,7 +167,7 @@ class sum4all(Plugin):
                 self.params_cache[user_id]['prompt'] = new_content
                 logger.info('params_cache for user has been successfully updated.')            
                 if self.image_sum_service in ["xunfei", "openai"]:
-                    self.handle_openai_image(self.params_cache[user_id]['last_image_base64'], e_context)
+                    self.handle_image(self.params_cache[user_id]['last_image_base64'], e_context)
                 elif self.image_sum_service == "gemini":
                     self.handle_gemini_image(self.params_cache[user_id]['last_image_base64'], e_context)
             # 如果存在最近一次处理的URL，触发URL理解函数
@@ -222,7 +222,7 @@ class sum4all(Plugin):
                 self.params_cache[user_id]['last_image_base64'] = base64_image
                 logger.info('Updated last_image_base64 in params_cache for user.')
                 if self.image_sum_service in ["xunfei", "openai"]:
-                    self.handle_openai_image(base64_image, e_context)
+                    self.handle_image(base64_image, e_context)
                 elif self.image_sum_service == "gemini":
                     self.handle_gemini_image(base64_image, e_context)
             else:
