@@ -54,8 +54,6 @@ text =[{"role": "user", "content": "", "content_type":"image"}]
     author="fatwang2",
 )
 
-
-
 class sum4all(Plugin):
     def __init__(self):
         super().__init__()
