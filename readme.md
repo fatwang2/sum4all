@@ -2,6 +2,7 @@
 [telegram频道 ](https://sum4all.site/telegram)
 
 ## 更新日志
+- V0.6.6，20230106，增加Gemini代理，解决非美国IP无法访问Gemini的问题
 - V0.6.5，20231217，结构化配置文件config.json，支持更灵活的调整文件、图片、URL、搜索的配置，升级后需按照新格式配置
 - V0.6.4，20231216，文件、图像总结支持Google最新的Gemini模型
 - V0.6.2，20231216，链接、搜索总结支持Google最新的Gemini模型，目前免费
