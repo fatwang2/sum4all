@@ -51,7 +51,7 @@ text =[{"role": "user", "content": "", "content_type":"image"}]
     name="sum4all",
     desire_priority=2,
     desc="A plugin for summarizing all things",
-    version="0.6.5",
+    version="0.6.6",
     author="fatwang2",
 )
 
@@ -320,7 +320,7 @@ class sum4all(Plugin):
         elif self.url_sum_service == "gemini":
             api_key = self.gemini_key
             model = "gemini"
-            api_base = "https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key="
+            api_base = "https://proxy.gemini.sum4all.one/v1/models/gemini-pro:generateContent?key="
         else:
             logger.error(f"未知的sum_service配置: {self.url_sum_service}")
             return
@@ -456,7 +456,7 @@ class sum4all(Plugin):
         elif self.search_sum_service == "gemini":
             api_key = self.gemini_key
             model = "gemini"
-            api_base = "https://generativelanguage.googleapis.com/v1beta/models"
+            api_base = "https://proxy.gemini.sum4all.one/v1/models"
 
         else:
             logger.error(f"未知的search_service配置: {self.search_sum_service}")
@@ -561,7 +561,7 @@ class sum4all(Plugin):
         elif self.file_sum_service == "gemini":
             api_key = self.gemini_key
             model = "gemini"
-            api_base = "https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent"
+            api_base = "https://proxy.gemini.sum4all.one/v1/models/gemini-pro:generateContent"
         else:
             logger.error(f"未知的sum_service配置: {self.file_sum_service}")
             return
@@ -847,7 +847,7 @@ class sum4all(Plugin):
         }
 
         try:
-            response = requests.post(f"https://generativelanguage.googleapis.com/v1/models/gemini-pro-vision:generateContent", headers=headers, json=payload)
+            response = requests.post(f"https://proxy.gemini.sum4all.one/v1/models/gemini-pro-vision:generateContent", headers=headers, json=payload)
             response.raise_for_status()
             response_json = response.json()
             # 提取响应中的文本内容
