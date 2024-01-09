@@ -5,4 +5,3 @@ PyMuPDF
 openpyxl
 beautifulsoup4
 python-pptx
-websocket-client
