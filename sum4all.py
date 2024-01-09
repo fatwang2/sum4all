@@ -861,160 +861,69 @@ class sum4all(Plugin):
         e_context["reply"] = reply
         e_context.action = EventAction.BREAK_PASS
     def handle_xunfei_image(self, base64_image, e_context):
-        global text
         logger.info("handle_xunfei_image_response: 解析讯飞图像处理API的响应")
-        websocket.enableTrace(False)
-        wsUrl = self.create_url()
-        self.ws_context = e_context
         msg: ChatMessage = e_context["context"]["msg"]
         user_id = msg.from_user_id
         user_params = self.params_cache.get(user_id, {})
         prompt = user_params.get('prompt', self.image_sum_prompt)
 
-
-        ws = websocket.WebSocketApp(wsUrl, on_message=self.on_message, on_error=self.on_error, on_close=self.on_close, on_open=self.on_open)
-        ws.appid = self.xunfei_app_id
-        ws.imagedata = base64.b64decode(base64_image)
-        text = [{"role": "user", "content": base64_image, "content_type": "image"}]
-        ws.question = self.checklen(self.getText("user",prompt))
-        ws.run_forever(sslopt={"cert_reqs": ssl.CERT_NONE})
-
-
-
-       # 生成url
-    def create_url(self):
-        # 生成RFC1123格式的时间戳
-        now = datetime.now()
-        date = format_date_time(mktime(now.timetuple()))
-
-        # 拼接字符串
-        signature_origin = "host: " + self.host + "\n"
-        signature_origin += "date: " + date + "\n"
-        signature_origin += "GET " + self.path + " HTTP/1.1"
-
-        # 进行hmac-sha256进行加密
-        signature_sha = hmac.new(self.xunfei_api_secret.encode('utf-8'), signature_origin.encode('utf-8'),
-                                 digestmod=hashlib.sha256).digest()
-
-        signature_sha_base64 = base64.b64encode(signature_sha).decode(encoding='utf-8')
-
-        authorization_origin = f'api_key="{self.xunfei_api_key}", algorithm="hmac-sha256", headers="host date request-line", signature="{signature_sha_base64}"'
-
-        authorization = base64.b64encode(authorization_origin.encode('utf-8')).decode(encoding='utf-8')
-
-        # 将请求的鉴权参数组合为字典
-        v = {
-            "authorization": authorization,
-            "date": date,
-            "host": self.host
+        headers = {
+            "Content-Type": "application/json",
+            "X_API_KEY": self.xunfei_api_key,
+            "X_APP_ID": self.xunfei_app_id,
+            "X_API_SECRET": self.xunfei_api_secret
         }
-        # 拼接鉴权参数，生成url
-        url = self.ImageUnderstanding_url + '?' + urlencode(v)
-        # print(url)
-        # 此处打印出建立连接时候的url,参考本demo的时候可取消上方打印的注释，比对相同参数时生成的url与自己代码生成的url是否一致
-        return url
 
-    def on_error(self, ws, error):
-        e_context = self.ws_context
+        payload = {
+            "model": "spark-chat-vision",
+            "messages": [
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": prompt
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": f"data:image/jpeg;base64,{base64_image}"
+                            }
+                        }
+                    ]
+                }
+            ],
+            "max_tokens": 3000
+        }
+
+        try:
+            response = requests.post("https://spark.sum4all.site/chat/completions", headers=headers, json=payload)
+            response.raise_for_status()  # 增加对HTTP错误的检查
+            response_json = response.json()  # 定义response_json
+            # 确保响应中有 'choices' 键并且至少有一个元素
+            if "choices" in response_json and len(response_json["choices"]) > 0:
+                first_choice = response_json["choices"][0]
+                if "message" in first_choice and "content" in first_choice["message"]:
+                    # 从响应中提取 'content'
+                    response_content = first_choice["message"]["content"].strip()
+                    logger.info("OpenAI API response content")  # 记录响应内容
+                    reply_content = response_content
+                else:
+                    logger.error("Content not found in the response")
+                    reply_content = "Content not found in the LLM API response"
+            else:
+                logger.error("No choices available in the response")
+                reply_content = "No choices available in the LLM API response"
+        except Exception as e:
+            logger.error(f"Error processing LLM API response: {e}")
+            reply_content = f"An error occurred while processing LLM API response: {e}"
+
         reply = Reply()
         reply.type = ReplyType.TEXT
-        logger.error(f"Error processing XunFei Image API response: {error}")
-        reply_content = f"An error occurred while processing XunFei Image API response: {error}"
-        reply.content = remove_markdown(reply_content)  # 设置响应内容到回复对象
+        reply.content = f"{remove_markdown(reply_content)}\n\n💬5min内输入{self.image_sum_qa_prefix}+问题，可继续追问"  
         e_context["reply"] = reply
         e_context.action = EventAction.BREAK_PASS
-
-
-    # 收到websocket关闭的处理
-    def on_close(self, ws, one, two):
-        print(" ")
-
-    # 收到websocket连接建立的处理
-    def on_open(self, ws):
-        logger.info(f"[XunFei Image] Start websocket")
-        thread.start_new_thread(self.run, (ws,))
-
-    def run(self, ws, *args):
-        data = json.dumps(self.gen_params(appid=ws.appid, question=ws.question))
-        ws.send(data)
-
-# 收到websocket消息的处理
-    def on_message(self, ws, message):
-        e_context = self.ws_context
-        # print(message)
-        data = json.loads(message)
-        code = data['header']['code']
-        message = data['header']['message']
-        if code != 0:
-            logger.error(f'[XunFei IMage] 请求错误: {code}, {data}')
-            reply = Reply()
-            reply.type = ReplyType.TEXT
-            reply.content = remove_markdown(message)  # 设置响应内容到回复对象
-            e_context["reply"] = reply
-            e_context.action = EventAction.BREAK_PASS
-            ws.close()
-        else:
-            choices = data["payload"]["choices"]
-            status = choices["status"]
-            content = choices["text"][0]["content"]
-            #logger.info(f"[XunFei IMage]content={content}")
-            self.ws_answer += content
-            # print(1)
-            if status == 2:
-                logger.info("XunFei Image API response content")  # 记录响应内容
-                reply = Reply()
-                reply.type = ReplyType.TEXT
-                reply.content = reply.content = f"{remove_markdown(self.ws_answer)}\n\n💬5min内输入{self.image_sum_qa_prefix}+问题，可继续追问"
-                e_context["reply"] = reply
-                e_context.action = EventAction.BREAK_PASS
-                ws.close()
-                self.ws_answer = ""
-
-    def gen_params(self, appid, question):
-        """
-        通过appid和用户的提问来生成请参数
-        """
-
-        data = {
-            "header": {
-                "app_id": appid
-            },
-            "parameter": {
-                "chat": {
-                    "domain": "image",
-                    "temperature": 0.5,
-                    "top_k": 4,
-                    "max_tokens": 2028,
-                    "auditing": "default"
-                }
-            },
-            "payload": {
-                "message": {
-                    "text": question
-                }
-            }
-        }
-
-        return data
-    def getText(self, role, content):
-        jsoncon = {}
-        jsoncon["role"] = role
-        jsoncon["content"] = content
-        text.append(jsoncon)
-        return text
-    def getlength(self, text):
-        length = 0
-        for content in text:
-            temp = content["content"]
-            leng = len(temp)
-            length += leng
-        return length
-    def checklen(self, text):
-        #print("text-content-tokens:", getlength(text[1:]))
-        while (self.getlength(text[1:])> 8000):
-            del text[1]
-        return text
-
+    
 def remove_markdown(text):
     # 替换Markdown的粗体标记
     text = text.replace("**", "")
