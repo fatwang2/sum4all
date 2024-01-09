@@ -51,7 +51,7 @@ text =[{"role": "user", "content": "", "content_type":"image"}]
     name="sum4all",
     desire_priority=2,
     desc="A plugin for summarizing all things",
-    version="0.6.6",
+    version="0.6.7",
     author="fatwang2",
 )
 
@@ -897,7 +897,7 @@ class sum4all(Plugin):
         }
 
         try:
-            response = requests.post("https://spark.sum4all.site/chat/completions", headers=headers, json=payload)
+            response = requests.post("https://spark.sum4all.site/v1/chat/completions", headers=headers, json=payload)
             response.raise_for_status()  # 增加对HTTP错误的检查
             response_json = response.json()  # 定义response_json
             # 确保响应中有 'choices' 键并且至少有一个元素
