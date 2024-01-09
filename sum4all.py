@@ -19,20 +19,7 @@ import csv
 from bs4 import BeautifulSoup
 from pptx import Presentation
 import base64
-from urllib.parse import urlparse
-from wsgiref.handlers import format_date_time
 
-import _thread as thread
-import datetime
-from datetime import datetime
-import hashlib
-import hmac
-from urllib.parse import urlparse
-import ssl
-from time import mktime
-from urllib.parse import urlencode
-from wsgiref.handlers import format_date_time
-import websocket  # 使用websocket_client
 
 EXTENSION_TO_TYPE = {
     'pdf': 'pdf',
@@ -44,8 +31,6 @@ EXTENSION_TO_TYPE = {
     'html': 'html', 'htm': 'html',
     'ppt': 'ppt', 'pptx': 'ppt'
 }
-imageunderstanding_url = "wss://spark-api.cn-huabei-1.xf-yun.com/v2.1/image"#云端环境的服务地址
-text =[{"role": "user", "content": "", "content_type":"image"}]
 
 @plugins.register(
     name="sum4all",
@@ -73,11 +58,7 @@ class sum4all(Plugin):
             # 设置事件处理函数
             self.handlers[Event.ON_HANDLE_CONTEXT] = self.on_handle_context
             self.params_cache = ExpiredDict(300)
-            self.host = urlparse(imageunderstanding_url).netloc
-            self.path = urlparse(imageunderstanding_url).path
-            self.ImageUnderstanding_url = imageunderstanding_url
-            self.ws_context = dict()
-            self.ws_answer = ""
+
             
             # 从配置中提取所需的设置
             self.keys = self.config.get("keys", {})
@@ -504,7 +485,7 @@ class sum4all(Plugin):
 
         reply = Reply()
         reply.type = ReplyType.TEXT
-        reply.content = reply_content            
+        reply.content = f"{remove_markdown(reply_content)}"            
         e_context["reply"] = reply
         e_context.action = EventAction.BREAK_PASS
     def handle_perplexity(self, content, e_context):
@@ -541,7 +522,7 @@ class sum4all(Plugin):
             logger.error(f"Error calling perplexity: {e}")
         reply = Reply()
         reply.type = ReplyType.TEXT
-        reply.content = f"{content}"
+        reply.content = f"{remove_markdown(content)}"            
         e_context["reply"] = reply
         e_context.action = EventAction.BREAK_PASS
     def get_help_text(self, **kwargs):
