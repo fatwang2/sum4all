@@ -124,7 +124,7 @@ class sum4all(Plugin):
         unsupported_urls = re.search(r'.*finder\.video\.qq\.com.*|.*support\.weixin\.qq\.com/update.*|.*support\.weixin\.qq\.com/security.*|.*mp\.weixin\.qq\.com/mp/waerrpage.*', content)
 
             # 检查输入是否以"搜索前缀词" 开头
-        if content.startswith(self.search_sum_search_prefix) and self.file_sum_enabled:
+        if content.startswith(self.search_sum_search_prefix) and self.search_sum_enabled:
             # Call new function to handle search operation
             self.call_service(content, e_context, "search")
             return
