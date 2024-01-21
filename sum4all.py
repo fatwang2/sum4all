@@ -446,7 +446,7 @@ class sum4all(Plugin):
             'Content-Type': 'application/json',
             'Authorization': f'Bearer {api_key}'
         }
-        content = content[len(self.search_sum_qa_prefix):]
+        content = content[len(self.search_sum_search_prefix):]
         payload = json.dumps({
             "ur": content,
             "prompt": self.search_sum_prompt,
