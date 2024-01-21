@@ -36,7 +36,7 @@ EXTENSION_TO_TYPE = {
     name="sum4all",
     desire_priority=2,
     desc="A plugin for summarizing all things",
-    version="0.6.7",
+    version="0.6.8",
     author="fatwang2",
 )
 
@@ -175,9 +175,12 @@ class sum4all(Plugin):
                 # 更新params_cache中的last_file_content
                 self.params_cache[user_id] = {}
                 file_content = self.extract_content(file_path)
-                self.params_cache[user_id]['last_file_content'] = file_content
-                logger.info('Updated last_file_content in params_cache for user.')
-                self.handle_file(file_content, e_context)
+                if file_content is None:
+                    logger.info("文件内容无法提取，跳过处理")
+                else:
+                    self.params_cache[user_id]['last_file_content'] = file_content
+                    logger.info('Updated last_file_content in params_cache for user.')
+                    self.handle_file(file_content, e_context)
             else:
                 logger.info("文件总结功能已禁用，不对文件内容进行处理")
             # 删除文件
