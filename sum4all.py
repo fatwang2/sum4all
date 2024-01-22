@@ -36,7 +36,7 @@ EXTENSION_TO_TYPE = {
     name="sum4all",
     desire_priority=2,
     desc="A plugin for summarizing all things",
-    version="0.6.9",
+    version="0.7.0",
     author="fatwang2",
 )
 
@@ -297,24 +297,19 @@ class sum4all(Plugin):
         content = self.params_cache[user_id].get('content', '')
         note = self.params_cache[user_id].get('note', '')
         # 将这些内容按照一定的格式整合到一起
-        note_content = f"#sum4all\n{title}\n{note}\n{content}\n{link}"
-
+        note_content = f"#sum4all\n{title}\n\n📒笔记：{note}\n\n{content}\n\n{link}"
         payload = {"content": note_content}
-
         # 将这个字典转换为JSON格式
         payload_json = json.dumps(payload)
-
         # 创建一个POST请求
         url = self.flomo_key
         headers = {'Content-Type': 'application/json'}
-
         # 发送这个POST请求
         response = requests.post(url, headers=headers, data=payload_json)
-        
         reply = Reply()
         reply.type = ReplyType.TEXT
         if response.status_code == 200 and response.json()['code'] == 0:
-            reply.content = "已发送到flomo"
+            reply.content = "已发送到{self.note_service}"
         else:
             reply.content = "发送失败，错误码：" + str(response.status_code)
         e_context["reply"] = reply
@@ -403,7 +398,7 @@ class sum4all(Plugin):
         if isgroup:
             reply.content = f"{remove_markdown(reply_content)}\n\n💬5min内输入{self.url_sum_qa_prefix}+问题，可继续追问"
         elif self.note_enabled:
-            reply.content = f"{remove_markdown(reply_content)}\n\n💬5min内输入{self.url_sum_qa_prefix}+问题，可继续追问。输入{self.note_prefix}+笔记内容，可发送当前总结+笔记到{self.note_service}"
+            reply.content = f"{remove_markdown(reply_content)}\n\n💬5min内输入{self.url_sum_qa_prefix}+问题，可继续追问。\n\n📒输入{self.note_prefix}+笔记，可发送当前总结&笔记到{self.note_service}"
         e_context["reply"] = reply
         e_context.action = EventAction.BREAK_PASS
     def handle_bibigpt(self, content, e_context):    

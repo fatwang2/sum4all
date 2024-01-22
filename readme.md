@@ -2,6 +2,7 @@
 [telegram频道 ](https://sum4all.site/telegram)
 
 ## 更新日志
+- V0.7.0，20230122，增加记笔记功能，支持把链接总结内容发送给笔记服务，已支持flomo
 - V0.6.8，20230121，增加对不支持文件类型忽略的逻辑；更换底层搜索、内容获取服务，更快更稳定；更新配置文件里的搜索默认prompt
 - V0.6.7，20230109，增加讯飞代理，简化讯飞部分代码与依赖
 - V0.6.6，20230106，增加Gemini代理，解决非美国IP无法访问Gemini的问题
@@ -11,10 +12,6 @@
 - V0.6.1，20231215，修复搜索bug
 - V0.6.1，20231214，企业微信ntwork模式，支持链接卡片、文件、图片，注意需更新chatgpt-on-wechat到最新版
 - V0.6.0，20231210，支持文件、链接多轮对话，OpenAI支持搜索模式
-- V0.5.6，20231209，支持搜索提示词的自定义配置
-- V0.5.5，20231209，支持图片多轮对话，图片默认总结后，5min内输入提问提示词即可继续追问，提示词可自定义
-- V0.5.1，20231209，群聊开关支持图片、文件，可通过修改配置文件的group_sharing来判断是否支持自动对群聊的图片、文件做总结
-- V0.5.0，20231206，新增支持讯飞图片总结功能，免费赠送200万token，感谢alexgang的PR
 
 [更多日志](https://github.com/fatwang2/sum4all/releases)
 
@@ -24,7 +21,7 @@
 ## 功能特点
 - 支持联网搜索
 - 支持多轮追问
-- 支持文章内容总结，个人微信支持链接卡片和url，企微支持url
+- 支持文章链接总结，且支持发送到在线笔记
 - 支持文件内容总结，包括pdf、doc、markdown、txt、xls、csv、html、ppt
 - 支持图片总结，包括png、jpeg、jpg
 - 支持视频、播客内容总结，包括抖音、b站、小红书、YouTube等
@@ -39,7 +36,10 @@
   <tr>
     <td><img src="picture/WX20231203-021149@2x.png" width="400px" alt="图片" /></td>  
     <td><img src="picture/image-6.png" width="400px" alt="链接卡片" /></td>
-
+  <tr>
+    <td><img src="picture/openai.png" width="400px" alt="url" /></td>
+    <td><img src="picture/flomo.png" width="400px" alt="note" /></td>
+  </tr>
   </tr>
   <tr>
     <td><img src="picture/抖音.png" width="400px" alt="抖音" /></td>    
@@ -62,10 +62,11 @@
 | 服务 | 支持功能 | 特点 | 注册地址 | 图片介绍 |
 |------|----------|------|----------|-----------|
 | OpenAI | 搜索、文件、图片、绝大部分网页文章 | 无需额外申请服务，舍得花钱的话，效果最可控 | [OpenAI](https://platform.openai.com/account/api-keys) \| [LinkAI代理](https://sum4all.site/linkai) | ![OpenAI](picture/openai.png) |
-| Sum4all | 搜索、文件、绝大部分网页文章 | 注册免费送1万token，邀请好友注册再各得5k，觉得好用的还可以注册Poe上的同名机器人 | [sum4all](https://sum4all.site/key) \| [Poe Sum4all机器人](https://sum4all.site/poe) | ![Sum4all](picture/sum4all.png) |
+| sum4all | 搜索、文件、绝大部分网页文章 | 注册免费送1万token，邀请好友注册再各得5k，觉得好用的还可以注册Poe上的同名机器人 | [sum4all](https://sum4all.site/key) \| [Poe Sum4all机器人](https://sum4all.site/poe) | ![Sum4all](picture/sum4all.png) |
 | Gemini | 搜索、文件、图片、绝大部分网页文章 | Google最新大模型，免费 | [gemini](https://sum4all.site/google) | ![Gemini](picture/gemini.png) |
 | Perplexity | 搜索 | 国外的搜索总结服务，速度快，价格贵，自带大模型，需自行注册和付费 | [Perplexity](https://sum4all.site/perplexity) | ![Perplexity](picture/p.png) | ![Alt text](picture/WX20231201-004639@2x.png) |
 | 讯飞 | 图片 | 讯飞星火大模型的图片理解功能，免费200万token，随便用 | [xunfei](https://sum4all.site/xunfei) | ![Perplexity](picture/讯飞.png) |
+| flomo | 记笔记 | 邀请码:OTY0，可免费得14天pro会员 | [flomo](https://sum4all.site/flomo) | ![flomo](picture/flomo-2.jpg) |
 | BibiGPT | 文章、视频、音频 | 注册免费享有60min时长 | [BibiGPT](https://sum4all.site/bibigpt) | ![BibiGPT](picture/image-3.png) |
 | OpenSum | 微信、头条、即刻等平台网页文章 | 19元30万字 | [OpenSum](https://sum4all.site/opensum) | ![OpenSum](picture/opensum.png) |
 
@@ -105,6 +106,11 @@
     "qa_prefix":"问", #图片总结追问前缀词
     "prompt": "" #图片总结prompt
   },
+  "note": {
+    "enabled": false, #笔记服务开关
+    "service": "flomo", #笔记服务，目前支持flomo，后面考虑支持notion
+    "prefix":"记" #笔记服务前缀词
+  },
   "keys": {
     "sum4all_key": "", #如选sum4all，则必填
     "gemini_key": "", #如选gemini，则必填
@@ -138,6 +144,8 @@ bibigpt输出语言支持列表：
 ```
 
 ## 后续计划
+- 支持记录到notion
+- 支持当日总结
 - 支持输出总结图片
 - 支持视频号总结
 - 支持通过管理员指令切换内容总结服务、配置参数等
