@@ -309,7 +309,7 @@ class sum4all(Plugin):
         reply = Reply()
         reply.type = ReplyType.TEXT
         if response.status_code == 200 and response.json()['code'] == 0:
-            reply.content = "已发送到{self.note_service}"
+            reply.content = f"已发送到{self.note_service}"        
         else:
             reply.content = "发送失败，错误码：" + str(response.status_code)
         e_context["reply"] = reply
