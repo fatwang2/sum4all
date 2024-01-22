@@ -36,7 +36,7 @@ EXTENSION_TO_TYPE = {
     name="sum4all",
     desire_priority=2,
     desc="A plugin for summarizing all things",
-    version="0.6.8",
+    version="0.6.9",
     author="fatwang2",
 )
 
@@ -66,7 +66,7 @@ class sum4all(Plugin):
             self.search_sum = self.config.get("search_sum", {})
             self.file_sum = self.config.get("file_sum", {})
             self.image_sum = self.config.get("image_sum", {})
-
+            self.note = self.config.get("note", {})
 
             self.sum4all_key = self.keys.get("sum4all_key", "")
             self.gemini_key = self.keys.get("gemini_key", "")
@@ -80,6 +80,7 @@ class sum4all(Plugin):
             self.xunfei_api_key = self.keys.get("xunfei_api_key", "")
             self.xunfei_api_secret = self.keys.get("xunfei_api_secret", "")
             self.perplexity_key = self.keys.get("perplexity_key", "")
+            self.flomo_key = self.keys.get("flomo_key", "")
 
             # 提取sum服务的配置
             self.url_sum_enabled = self.url_sum.get("enabled", False)
@@ -106,6 +107,10 @@ class sum4all(Plugin):
             self.image_sum_qa_prefix = self.image_sum.get("qa_prefix", "问")
             self.image_sum_prompt = self.image_sum.get("prompt", "")
 
+            self.note_enabled = self.note.get("enabled", False)
+            self.note_service = self.note.get("service", "")
+            self.note_prefix = self.note.get("prefix", "记")
+
             # 初始化成功日志
             logger.info("[sum4all] inited.")
         except Exception as e:
@@ -125,6 +130,9 @@ class sum4all(Plugin):
 
             # 检查输入是否以"搜索前缀词" 开头
         if content.startswith(self.search_sum_search_prefix) and self.search_sum_enabled:
+            # 如果消息来自一个群聊，并且你不希望在群聊中启用搜索功能，直接返回
+            if isgroup and not self.search_sum_group:
+                return
             # Call new function to handle search operation
             self.call_service(content, e_context, "search")
             return
@@ -159,6 +167,12 @@ class sum4all(Plugin):
                 self.params_cache[user_id]['prompt'] = new_content
                 logger.info('params_cache for user has been successfully updated.')            
                 self.call_service(self.params_cache[user_id]['last_url'], e_context ,"sum")
+            elif 'last_url' in self.params_cache[user_id] and content.startswith(self.note_prefix) and self.note_enabled and not isgroup:
+                logger.info('Content starts with the note_prefix.')
+                new_content = content[len(self.note_prefix):]
+                self.params_cache[user_id]['note'] = new_content
+                logger.info('params_cache for user has been successfully updated.')  
+                self.call_service(self.params_cache[user_id]['last_url'], e_context, "note")
         if context.type == ContextType.FILE:
             if isgroup and not self.file_sum_group:
                 # 群聊中忽略处理文件
@@ -273,8 +287,38 @@ class sum4all(Plugin):
                 self.handle_url(content, e_context)
             elif self.url_sum_service == "opensum":
                 self.handle_opensum(content, e_context)
- 
+        elif service_type == "note":
+            if self.note_service == "flomo":
+                self.handle_note(content, e_context)
+    def handle_note(self,link,e_context):
+        msg: ChatMessage = e_context["context"]["msg"]
+        user_id = msg.from_user_id
+        title = self.params_cache[user_id].get('title', '')
+        content = self.params_cache[user_id].get('content', '')
+        note = self.params_cache[user_id].get('note', '')
+        # 将这些内容按照一定的格式整合到一起
+        note_content = f"#sum4all\n{title}\n{note}\n{content}\n{link}"
+
+        payload = {"content": note_content}
+
+        # 将这个字典转换为JSON格式
+        payload_json = json.dumps(payload)
+
+        # 创建一个POST请求
+        url = self.flomo_key
+        headers = {'Content-Type': 'application/json'}
+
+        # 发送这个POST请求
+        response = requests.post(url, headers=headers, data=payload_json)
         
+        reply = Reply()
+        reply.type = ReplyType.TEXT
+        if response.status_code == 200 and response.json()['code'] == 0:
+            reply.content = "已发送到flomo"
+        else:
+            reply.content = "发送失败，错误码：" + str(response.status_code)
+        e_context["reply"] = reply
+        e_context.action = EventAction.BREAK_PASS   
     def short_url(self, long_url):
         url = "https://short.fatwang2.com"
         payload = {
@@ -312,6 +356,7 @@ class sum4all(Plugin):
         msg: ChatMessage = e_context["context"]["msg"]
         user_id = msg.from_user_id
         user_params = self.params_cache.get(user_id, {})
+        isgroup = e_context["context"].get("isgroup", False)
         prompt = user_params.get('prompt', self.url_sum_prompt)
         headers = {
             'Content-Type': 'application/json',
@@ -334,10 +379,12 @@ class sum4all(Plugin):
             response_data = response.json()  # 解析响应的 JSON 数据
             if response_data.get("success"):
                 content = response_data["content"].replace("\\n", "\n")  # 替换 \\n 为 \n
+                self.params_cache[user_id]['content'] = content
 
                 # 新增加的部分，用于解析 meta 数据
                 meta = response_data.get("meta", {})  # 如果没有 meta 数据，则默认为空字典
                 title = meta.get("og:title", "")  # 获取 og:title，如果没有则默认为空字符串
+                self.params_cache[user_id]['title'] = title
                 # 只有当 title 非空时，才加入到回复中
                 if title:
                     additional_content += f"{title}\n\n"
@@ -353,7 +400,10 @@ class sum4all(Plugin):
 
         reply = Reply()
         reply.type = ReplyType.TEXT
-        reply.content = f"{remove_markdown(reply_content)}\n\n💬5min内输入{self.url_sum_qa_prefix}+问题，可继续追问"             
+        if isgroup:
+            reply.content = f"{remove_markdown(reply_content)}\n\n💬5min内输入{self.url_sum_qa_prefix}+问题，可继续追问"
+        elif self.note_enabled:
+            reply.content = f"{remove_markdown(reply_content)}\n\n💬5min内输入{self.url_sum_qa_prefix}+问题，可继续追问。输入{self.note_prefix}+笔记内容，可发送当前总结+笔记到{self.note_service}"
         e_context["reply"] = reply
         e_context.action = EventAction.BREAK_PASS
     def handle_bibigpt(self, content, e_context):    

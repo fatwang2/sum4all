@@ -27,6 +27,11 @@
     "qa_prefix":"问",
     "prompt": "先全局分析图片的主要内容，并按照逻辑分层次、段落，提炼出5个左右图片中的精华信息、关键要点，生动地向读者描述图片的主要内容。注意排版、换行、emoji、标签的合理搭配，清楚地展现图片讲了什么"
   },
+  "note": {
+    "enabled": false,
+    "service": "flomo",
+    "prefix":"记"
+  },
   "keys": {
     "sum4all_key": "",
     "gemini_key": "",
@@ -39,6 +44,7 @@
     "xunfei_api_secret": "",
     "opensum_key": "",
     "bibigpt_key": "",
-    "outputLanguage": "zh-CN"
+    "outputLanguage": "zh-CN",
+    "flomo_key":""
   }
 }
