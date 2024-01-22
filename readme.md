@@ -37,8 +37,8 @@
     <td><img src="picture/WX20231203-021149@2x.png" width="400px" alt="图片" /></td>  
     <td><img src="picture/image-6.png" width="400px" alt="链接卡片" /></td>
   <tr>
-    <td><img src="picture/openai.png" width="400px" alt="url" /></td>
-    <td><img src="picture/flomo.png" width="400px" alt="note" /></td>
+    <td><img src="picture/flomo1.png" width="400px" alt="url" /></td>
+    <td><img src="picture/flomo2.png" width="400px" alt="note" /></td>
   </tr>
   </tr>
   <tr>
@@ -66,7 +66,7 @@
 | Gemini | 搜索、文件、图片、绝大部分网页文章 | Google最新大模型，免费 | [gemini](https://sum4all.site/google) | ![Gemini](picture/gemini.png) |
 | Perplexity | 搜索 | 国外的搜索总结服务，速度快，价格贵，自带大模型，需自行注册和付费 | [Perplexity](https://sum4all.site/perplexity) | ![Perplexity](picture/p.png) | ![Alt text](picture/WX20231201-004639@2x.png) |
 | 讯飞 | 图片 | 讯飞星火大模型的图片理解功能，免费200万token，随便用 | [xunfei](https://sum4all.site/xunfei) | ![Perplexity](picture/讯飞.png) |
-| flomo | 记笔记 | 邀请码:OTY0，可免费得14天pro会员 | [flomo](https://sum4all.site/flomo) | ![flomo](picture/flomo-2.jpg) |
+| flomo | 记笔记 | 邀请码:OTY0，可免费得14天pro会员 | [flomo](https://sum4all.site/flomo) | ![flomo](picture/flomo-api.jpg) |
 | BibiGPT | 文章、视频、音频 | 注册免费享有60min时长 | [BibiGPT](https://sum4all.site/bibigpt) | ![BibiGPT](picture/image-3.png) |
 | OpenSum | 微信、头条、即刻等平台网页文章 | 19元30万字 | [OpenSum](https://sum4all.site/opensum) | ![OpenSum](picture/opensum.png) |
 
