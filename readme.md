@@ -1,6 +1,9 @@
 ## 用户交流
 [telegram频道 ](https://sum4all.site/telegram)
 
+## 友情赞助
+<a href="https://www.buymeacoffee.com/fatwang2" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
+
 ## 更新日志
 - V0.7.0，20230122，增加记笔记功能，支持把链接总结内容发送给笔记服务，已支持flomo
 - V0.6.8，20230121，增加对不支持文件类型忽略的逻辑；更换底层搜索、内容获取服务，更快更稳定；更新配置文件里的搜索默认prompt
@@ -149,11 +152,3 @@ bibigpt输出语言支持列表：
 - 支持输出总结图片
 - 支持视频号总结
 - 支持通过管理员指令切换内容总结服务、配置参数等
-
-## 赞助地址
-如果有幸帮到你，请随意打赏
-
-![Alt text](picture/微信.jpg)
-
-## 赞助名单
-- 兔子橙
