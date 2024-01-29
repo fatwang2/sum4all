@@ -297,7 +297,7 @@ class sum4all(Plugin):
         content = self.params_cache[user_id].get('content', '')
         note = self.params_cache[user_id].get('note', '')
         # 将这些内容按照一定的格式整合到一起
-        note_content = f"#sum4all\n{title}\n\n📒笔记：{note}\n\n{content}\n\n{link}"
+        note_content = f"#sum4all\n{title}\n📒笔记：{note}\n{content}\n{link}"
         payload = {"content": note_content}
         # 将这个字典转换为JSON格式
         payload_json = json.dumps(payload)

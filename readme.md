@@ -1,10 +1,24 @@
 ## 用户交流
-[telegram频道 ](https://sum4all.site/telegram)
+[telegram频道](https://sum4all.site/telegram)\
+[即刻](https://sum4all.site/jike)\
+[X](https://sum4all.site/twitter)
 
 ## 友情赞助
 <a href="https://www.buymeacoffee.com/fatwang2" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy Me A Coffee" style="height: 60px !important;width: 217px !important;" ></a>
 
-## 更新日志
+## 简介
+本项目为大模型内容总结服务，有微信插件、[telegram机器人](https://t.me/sum4all_bot)
+、[iOS快捷指令](https://sum4all.site/shortcuts)
+三个版本，其中微信插件需要自行部署，需配合[chatgpt-on-wechat](https://github.com/zhayujie/chatgpt-on-wechat)项目，其他插件可点击链接自行体验
+
+## iOS快捷指令
+<img src="picture/shortcuts.PNG" width="200px" alt="文件" />
+
+## telegram机器人
+<img src="picture/telegram_bot.PNG" width="200px" alt="文件" />
+
+## 微信插件
+### 更新日志
 - V0.7.0，20230122，增加记笔记功能，支持把链接总结内容发送给笔记服务，已支持flomo
 - V0.6.8，20230121，增加对不支持文件类型忽略的逻辑；更换底层搜索、内容获取服务，更快更稳定；更新配置文件里的搜索默认prompt
 - V0.6.7，20230109，增加讯飞代理，简化讯飞部分代码与依赖
@@ -18,10 +32,9 @@
 
 [更多日志](https://github.com/fatwang2/sum4all/releases)
 
-## 简介
-本项目为微信插件，需配合[chatgpt-on-wechat](https://github.com/zhayujie/chatgpt-on-wechat)项目使用
 
-## 功能特点
+
+### 功能特点
 - 支持联网搜索
 - 支持多轮追问
 - 支持文章链接总结，且支持发送到在线笔记
@@ -51,7 +64,7 @@
   
 </table>
 
-## 安装
+### 安装
 使用管理员口令在线安装，管理员认证方法见：[管理员认证](https://github.com/zhayujie/chatgpt-on-wechat/tree/master/plugins/godcmd)
 ```
 #installp https://github.com/fatwang2/sum4all.git
@@ -60,7 +73,7 @@
 
 ![Alt text](picture/image-4.png)
 
-## 申请服务（自行选择，各有优劣）
+### 申请服务（自行选择，各有优劣）
 
 | 服务 | 支持功能 | 特点 | 注册地址 | 图片介绍 |
 |------|----------|------|----------|-----------|
@@ -74,7 +87,7 @@
 | OpenSum | 微信、头条、即刻等平台网页文章 | 19元30万字 | [OpenSum](https://sum4all.site/opensum) | ![OpenSum](picture/opensum.png) |
 
 
-## 配置
+### 配置
 - 服务器部署：复制插件目录的`config.json.template`文件,重命名为`config.json`，配置参数即可
 - docker部署：参考项目docker部署的插件使用，`config.json`内增加sum4all插件的配置参数，操作见 [docker插件配置](https://github.com/zhayujie/chatgpt-on-wechat#3-%E6%8F%92%E4%BB%B6%E4%BD%BF%E7%94%A8)
 
@@ -146,7 +159,7 @@ bibigpt输出语言支持列表：
   हिंदी: 'hi-IN',
 ```
 
-## 后续计划
+### 后续计划
 - 支持记录到notion
 - 支持当日总结
 - 支持输出总结图片
