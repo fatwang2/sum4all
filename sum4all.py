@@ -782,11 +782,14 @@ class sum4all(Plugin):
         logger.info("extract_content: 文件内容提取完成")
         return read_func(file_path)
     def encode_image_to_base64(self, image_path):
-        # 打开并调整图片大小
+        # 打开图片
         img = Image.open(image_path)
-        img = img.resize((1024, int(img.height*1024/img.width)))
-        # 将调整大小后的图片保存回原文件
-        img.save(image_path)
+        # 只有当图片的宽度大于1024像素时，才调整图片大小
+        if img.width > 1024:
+            img = img.resize((1024, int(img.height*1024/img.width)))
+            # 将调整大小后的图片保存回原文件
+            img.save(image_path)
+
         # 打开调整大小后的图片，读取并进行base64编码
         with open(image_path, "rb") as image_file:
             encoded = base64.b64encode(image_file.read()).decode('utf-8')
