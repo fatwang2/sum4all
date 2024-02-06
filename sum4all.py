@@ -784,7 +784,7 @@ class sum4all(Plugin):
     def encode_image_to_base64(self, image_path):
         # 打开并调整图片大小
         img = Image.open(image_path)
-        img = img.resize((512, int(img.height*512/img.width)))
+        img = img.resize((1024, int(img.height*1024/img.width)))
         # 将调整大小后的图片保存回原文件
         img.save(image_path)
         # 打开调整大小后的图片，读取并进行base64编码
