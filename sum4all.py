@@ -18,6 +18,7 @@ from openpyxl import load_workbook
 import csv
 from bs4 import BeautifulSoup
 from pptx import Presentation
+from PIL import Image
 import base64
 
 
@@ -36,7 +37,7 @@ EXTENSION_TO_TYPE = {
     name="sum4all",
     desire_priority=2,
     desc="A plugin for summarizing all things",
-    version="0.7.1",
+    version="0.7.2",
     author="fatwang2",
 )
 
@@ -781,8 +782,15 @@ class sum4all(Plugin):
         logger.info("extract_content: 文件内容提取完成")
         return read_func(file_path)
     def encode_image_to_base64(self, image_path):
+        # 打开并调整图片大小
+        img = Image.open(image_path)
+        img = img.resize((512, int(img.height*512/img.width)))
+        # 将调整大小后的图片保存回原文件
+        img.save(image_path)
+        # 打开调整大小后的图片，读取并进行base64编码
         with open(image_path, "rb") as image_file:
-            return base64.b64encode(image_file.read()).decode('utf-8')
+            encoded = base64.b64encode(image_file.read()).decode('utf-8')
+        return encoded
     # Function to handle OpenAI image processing
     def handle_openai_image(self, base64_image, e_context):
         logger.info("handle_openai_image_response: 解析OpenAI图像处理API的响应")
