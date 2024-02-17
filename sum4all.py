@@ -37,7 +37,7 @@ EXTENSION_TO_TYPE = {
     name="sum4all",
     desire_priority=2,
     desc="A plugin for summarizing all things",
-    version="0.7.2",
+    version="0.7.3",
     author="fatwang2",
 )
 
@@ -888,7 +888,7 @@ class sum4all(Plugin):
         }
 
         try:
-            response = requests.post(f"https://proxy.gemini.sum4all.one/v1/models/gemini-pro-vision:generateContent", headers=headers, json=payload)
+            response = requests.post(f"https://gemini.sum4all.site/v1/models/gemini-pro-vision:generateContent", headers=headers, json=payload)
             response.raise_for_status()
             response_json = response.json()
             # 提取响应中的文本内容
