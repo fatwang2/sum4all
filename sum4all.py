@@ -344,7 +344,7 @@ class sum4all(Plugin):
         elif self.url_sum_service == "gemini":
             api_key = self.gemini_key
             model = "gemini"
-            api_base = "https://proxy.gemini.sum4all.one/v1/models/gemini-pro:generateContent?key="
+            api_base = "https://gemini.sum4all.site/v1/models/gemini-pro:generateContent?key="
         else:
             logger.error(f"未知的sum_service配置: {self.url_sum_service}")
             return
@@ -592,7 +592,7 @@ class sum4all(Plugin):
         elif self.file_sum_service == "gemini":
             api_key = self.gemini_key
             model = "gemini"
-            api_base = "https://proxy.gemini.sum4all.one/v1/models/gemini-pro:generateContent"
+            api_base = "https://gemini.sum4all.site/v1/models/gemini-pro:generateContent"
         else:
             logger.error(f"未知的sum_service配置: {self.file_sum_service}")
             return
