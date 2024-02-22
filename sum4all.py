@@ -486,7 +486,7 @@ class sum4all(Plugin):
         elif self.search_sum_service == "gemini":
             api_key = self.gemini_key
             model = "gemini"
-            api_base = "https://proxy.gemini.sum4all.one/v1/models"
+            api_base = "https://gemini.sum4all.site/v1/models/gemini-pro:generateContent"
 
         else:
             logger.error(f"未知的search_service配置: {self.search_sum_service}")
@@ -657,18 +657,18 @@ class sum4all(Plugin):
                     first_choice = response_data["choices"][0]
                     if "message" in first_choice and "content" in first_choice["message"]:
                         response_content = first_choice["message"]["content"].strip()  # 获取响应内容
-                        logger.info(f"OpenAI API response content")  # 记录响应内容
+                        logger.info(f"LLM API response content")  # 记录响应内容
                         reply_content = response_content.replace("\\n", "\n")  # 替换 \\n 为 \n
                     else:
                         logger.error("Content not found in the response")
-                        reply_content = "Content not found in the OpenAI API response"
+                        reply_content = "Content not found in the LLM API response"
                 else:
                     logger.error("No choices available in the response")
-                    reply_content = "No choices available in the OpenAI API response"
+                    reply_content = "No choices available in the LLM API response"
 
         except requests.exceptions.RequestException as e:
-            logger.error(f"Error calling OpenAI API: {e}")
-            reply_content = f"An error occurred while calling OpenAI API: {e}"
+            logger.error(f"Error calling LLM API: {e}")
+            reply_content = f"An error occurred while calling LLM API: {e}"
 
         reply = Reply()
         reply.type = ReplyType.TEXT
@@ -839,17 +839,17 @@ class sum4all(Plugin):
                 if "message" in first_choice and "content" in first_choice["message"]:
                     # 从响应中提取 'content'
                     response_content = first_choice["message"]["content"].strip()
-                    logger.info("OpenAI API response content")  # 记录响应内容
+                    logger.info("LLM API response content")  # 记录响应内容
                     reply_content = response_content
                 else:
                     logger.error("Content not found in the response")
-                    reply_content = "Content not found in the OpenAI API response"
+                    reply_content = "Content not found in the LLM API response"
             else:
                 logger.error("No choices available in the response")
-                reply_content = "No choices available in the OpenAI API response"
+                reply_content = "No choices available in the LLM API response"
         except Exception as e:
-            logger.error(f"Error processing OpenAI API response: {e}")
-            reply_content = f"An error occurred while processing OpenAI API response: {e}"
+            logger.error(f"Error processing LLM API response: {e}")
+            reply_content = f"An error occurred while processing LLM API response: {e}"
 
         reply = Reply()
         reply.type = ReplyType.TEXT
@@ -947,7 +947,7 @@ class sum4all(Plugin):
                 if "message" in first_choice and "content" in first_choice["message"]:
                     # 从响应中提取 'content'
                     response_content = first_choice["message"]["content"].strip()
-                    logger.info("OpenAI API response content")  # 记录响应内容
+                    logger.info("LLM API response content")  # 记录响应内容
                     reply_content = response_content
                 else:
                     logger.error("Content not found in the response")
