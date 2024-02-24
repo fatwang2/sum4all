@@ -545,7 +545,7 @@ class sum4all(Plugin):
             'Authorization': f'Bearer {self.perplexity_key}'
         }
         data = {
-            "model": "pplx-7b-online",
+            "model": "sonar-small-online",
             "messages": [
                 {"role": "system", "content": self.search_sum_prompt},
                 {"role": "user", "content": content}
@@ -608,7 +608,7 @@ class sum4all(Plugin):
             data = {
             "contents": [
                 {"role": "user", "parts": [{"text": prompt}]},
-                {"role": "model", "parts": [{"text": ""}]},
+                {"role": "model", "parts": [{"text": "okay"}]},
                 {"role": "user", "parts": [{"text": content}]}
             ],
             "generationConfig": {
