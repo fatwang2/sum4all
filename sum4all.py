@@ -392,7 +392,7 @@ class sum4all(Plugin):
         except requests.exceptions.RequestException as e:
             # 处理可能出现的错误
             logger.error(f"Error calling new combined api: {e}")
-            reply_content = f"An error occurred: {e}"
+            reply_content = f"An error occurred"
 
         reply = Reply()
         reply.type = ReplyType.TEXT
@@ -432,7 +432,7 @@ class sum4all(Plugin):
             # 移除 "##摘要"、"## 亮点" 和 "-"
             summary = summary_original.split("详细版（支持对话追问）")[0].replace("## 摘要\n", "📌总结：").replace("## 亮点\n", "").replace("- ", "")
         except requests.exceptions.RequestException as e:
-            reply = f"An error occurred: {e}"
+            reply = f"An error occurred"
 
         reply = Reply()
         reply.type = ReplyType.TEXT
@@ -464,7 +464,7 @@ class sum4all(Plugin):
             summary = re.sub(url_pattern_remove, '', summary_original).strip()        
 
         except requests.exceptions.RequestException as e:
-            summary = f"An error occurred: {e}"
+            summary = f"An error occurred"
             short_url = 'URL not available'
         
         reply = Reply()
@@ -531,7 +531,7 @@ class sum4all(Plugin):
         except requests.exceptions.RequestException as e:
             # 处理可能出现的错误
             logger.error(f"Error calling new combined api: {e}")
-            reply_content = f"An error occurred: {e}"
+            reply_content = f"An error occurred"
 
         reply = Reply()
         reply.type = ReplyType.TEXT
@@ -668,7 +668,7 @@ class sum4all(Plugin):
 
         except requests.exceptions.RequestException as e:
             logger.error(f"Error calling LLM API: {e}")
-            reply_content = f"An error occurred while calling LLM API: {e}"
+            reply_content = f"An error occurred while calling LLM API"
 
         reply = Reply()
         reply.type = ReplyType.TEXT
@@ -849,7 +849,7 @@ class sum4all(Plugin):
                 reply_content = "No choices available in the LLM API response"
         except Exception as e:
             logger.error(f"Error processing LLM API response: {e}")
-            reply_content = f"An error occurred while processing LLM API response: {e}"
+            reply_content = f"An error occurred while processing LLM API response"
 
         reply = Reply()
         reply.type = ReplyType.TEXT
@@ -894,7 +894,7 @@ class sum4all(Plugin):
             # 提取响应中的文本内容
             reply_content = response_json.get('candidates', [{}])[0].get('content', {}).get('parts', [{}])[0].get('text', 'No text found in the response')
         except Exception as e:
-            reply_content = f"An error occurred while processing Gemini API response: {e}"
+            reply_content = f"An error occurred while processing Gemini API response"
 
         reply = Reply()
         reply.type = ReplyType.TEXT
@@ -957,7 +957,7 @@ class sum4all(Plugin):
                 reply_content = "No choices available in the LLM API response"
         except Exception as e:
             logger.error(f"Error processing LLM API response: {e}")
-            reply_content = f"An error occurred while processing LLM API response: {e}"
+            reply_content = f"An error occurred while processing LLM API response"
 
         reply = Reply()
         reply.type = ReplyType.TEXT
