@@ -10,6 +10,7 @@
   "search_sum": {
     "enabled": false,
     "service": "sum4all",
+    "search_service": "duckduckgo",
     "group": true,
     "search_prefix":"搜",
     "prompt": "你是一个信息检索专家，我会把我的问题和搜索结果发给你，请你根据问题，从搜索结果里找出能回答问题的相关内容，用简单明了的语言为我做回复，尽量使用emoji让你的表达更生动"
@@ -35,6 +36,7 @@
   },
   "keys": {
     "sum4all_key": "",
+    "search1api_key": "",
     "gemini_key": "",
     "perplexity_key": "",
     "open_ai_api_key": "",

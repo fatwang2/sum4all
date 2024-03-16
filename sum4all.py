@@ -70,6 +70,7 @@ class sum4all(Plugin):
             self.note = self.config.get("note", {})
 
             self.sum4all_key = self.keys.get("sum4all_key", "")
+            self.search1api_key = self.keys.get("search1api_key", "")
             self.gemini_key = self.keys.get("gemini_key", "")
             self.bibigpt_key = self.keys.get("bibigpt_key", "")
             self.outputLanguage = self.keys.get("outputLanguage", "zh-CN")
@@ -93,6 +94,7 @@ class sum4all(Plugin):
 
             self.search_sum_enabled = self.search_sum.get("enabled", False)
             self.search_sum_service = self.search_sum.get("service", "")
+            self.search_service = self.search_sum.get("search_service", "")
             self.search_sum_group = self.search_sum.get("group", True)
             self.search_sum_search_prefix = self.search_sum.get("search_prefix", "搜")
             self.search_sum_prompt = self.search_sum.get("prompt", "")
@@ -184,7 +186,6 @@ class sum4all(Plugin):
             context.get("msg").prepare()
             file_path = context.content
             logger.info(f"on_handle_context: 获取到文件路径 {file_path}")
-            
             
             # 检查是否应该进行文件总结
             if self.file_sum_enabled:
@@ -503,7 +504,9 @@ class sum4all(Plugin):
             "ur": content,
             "prompt": self.search_sum_prompt,
             "model": model,
-            "base": api_base
+            "base": api_base,
+            "search1api_key": self.search1api_key,
+            "search_service": self.search_service  
         })
         try:
             api_url = "https://ai.sum4all.site"
