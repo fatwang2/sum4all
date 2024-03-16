@@ -581,8 +581,11 @@ class sum4all(Plugin):
         reply.content = f"{remove_markdown(content)}"            
         e_context["reply"] = reply
         e_context.action = EventAction.BREAK_PASS
-    def get_help_text(self, **kwargs):
+    def get_help_text(self, verbose=False, **kwargs):
         help_text = "Help you summarize all things\n"
+        if not verbose:
+            return help_text
+        help_text += "Plz share the link you want me to summarize"
         return help_text
     def handle_file(self, content, e_context):
         logger.info("handle_file: 向LLM发送内容总结请求")
