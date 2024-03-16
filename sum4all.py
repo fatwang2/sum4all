@@ -585,7 +585,8 @@ class sum4all(Plugin):
         help_text = "Help you summarize all things\n"
         if not verbose:
             return help_text
-        help_text += "Plz share the link you want me to summarize"
+        help_text += "1.Share me the link and I will summarize it for you\n"
+        help_text += f"2.{self.search_sum_search_prefix}+query,I will search online for you\n"
         return help_text
     def handle_file(self, content, e_context):
         logger.info("handle_file: 向LLM发送内容总结请求")
