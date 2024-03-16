@@ -37,7 +37,7 @@ EXTENSION_TO_TYPE = {
     name="sum4all",
     desire_priority=2,
     desc="A plugin for summarizing all things",
-    version="0.7.3",
+    version="0.7.4",
     author="fatwang2",
 )
 
