@@ -87,6 +87,7 @@ class sum4all(Plugin):
             self.url_sum_enabled = self.url_sum.get("enabled", False)
             self.url_sum_service = self.url_sum.get("service", "")
             self.url_sum_group = self.url_sum.get("group", True)
+            self.url_sum_qa_enabled = self.url_sum.get("qa_enabled", True)
             self.url_sum_qa_prefix = self.url_sum.get("qa_prefix", "问")
             self.url_sum_prompt = self.url_sum.get("prompt", "")
 
@@ -396,7 +397,9 @@ class sum4all(Plugin):
 
         reply = Reply()
         reply.type = ReplyType.TEXT
-        if isgroup or not self.note_enabled:
+        if not self.url_sum_qa_enabled:
+            reply.content = remove_markdown(reply_content)
+        elif isgroup or not self.note_enabled:
             reply.content = f"{remove_markdown(reply_content)}\n\n💬5min内输入{self.url_sum_qa_prefix}+问题，可继续追问"
         elif self.note_enabled:
             reply.content = f"{remove_markdown(reply_content)}\n\n💬5min内输入{self.url_sum_qa_prefix}+问题，可继续追问。\n\n📒输入{self.note_prefix}+笔记，可发送当前总结&笔记到{self.note_service}"

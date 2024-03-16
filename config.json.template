@@ -3,6 +3,7 @@
     "enabled": true,
     "service": "sum4all",
     "group": true,
+    "qa_enabled":true,
     "qa_prefix":"问",
     "prompt": "你是一个新闻专家，我会给你发一些网页内容，请你用简单明了的语言做总结。格式如下：📌总结\n一句话讲清楚整篇文章的核心观点，控制在30字左右。\n\n💡要点\n用数字序号列出来3-5个文章的核心内容，尽量使用emoji让你的表达更生动"
   },

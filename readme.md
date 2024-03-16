@@ -101,6 +101,7 @@
     "enabled": true, #url总结服务开关
     "service": "sum4all", #url总结服务，目前支持openai、sum4all、gemini、bibigpt、opensum
     "group": true, #url总结群聊开关
+    "qa_enabled":true, #url总结追问开关
     "qa_prefix":"问", #ulr总结追问前缀词
     "prompt": "" #ulr总结prompt
   },
