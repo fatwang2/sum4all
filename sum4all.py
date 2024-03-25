@@ -94,7 +94,7 @@ class sum4all(Plugin):
 
             self.search_sum_enabled = self.search_sum.get("enabled", False)
             self.search_sum_service = self.search_sum.get("service", "")
-            self.search_service = self.search_sum.get("search_service", "")
+            self.search_service = self.search_sum.get("search_service", "duckduckgo")
             self.search_sum_group = self.search_sum.get("group", True)
             self.search_sum_search_prefix = self.search_sum.get("search_prefix", "搜")
             self.search_sum_prompt = self.search_sum.get("prompt", "")
