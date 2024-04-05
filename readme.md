@@ -117,6 +117,7 @@
   "file_sum": {
     "enabled": false, #文件总结服务开关
     "service": "sum4all", #文件总结服务，目前支持openai、sum4all、gemini
+    "max_file_size": "15000", #支持的文件大小，单位kb，最终能否总结取决于有大模型的token限制
     "group": true, #文件总结群聊开关
     "qa_prefix":"问", #文件总结追问前缀词
     "prompt": "" #文件总结prompt

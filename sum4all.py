@@ -35,7 +35,7 @@ EXTENSION_TO_TYPE = {
     name="sum4all",
     desire_priority=2,
     desc="A plugin for summarizing all things",
-    version="0.7.4",
+    version="0.7.5",
     author="fatwang2",
 )
 
@@ -732,7 +732,7 @@ class sum4all(Plugin):
     def extract_content(self, file_path):
         logger.info(f"extract_content: 提取文件内容，文件路径: {file_path}")
         file_size = os.path.getsize(file_path) // 1000  # 将文件大小转换为KB
-        if file_size > self.max_file_size:
+        if file_size > int(self.max_file_size):
             logger.warning(f"文件大小超过限制({self.max_file_size}KB),不进行处理。文件大小: {file_size}KB")
             return None
         file_extension = os.path.splitext(file_path)[1][1:].lower()

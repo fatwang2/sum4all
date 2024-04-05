@@ -18,13 +18,14 @@
   "file_sum": {
     "enabled": false,
     "service": "sum4all",
+    "max_file_size": "15000",
     "group": true,
     "qa_prefix":"问",
     "prompt": "你是一个新闻专家，我会给你发一些网页内容，请你用简单明了的语言做总结。格式如下：📌总结\n一句话讲清楚整篇文章的核心观点，控制在30字左右。\n\n💡要点\n用数字序号列出来3-5个文章的核心内容，尽量使用emoji让你的表达更生动"
   },
   "image_sum": {
     "enabled": false,
-    "service": "gemini",
+    "service": "sum4all",
     "group": true,
     "qa_prefix":"问",
     "prompt": "先全局分析图片的主要内容，并按照逻辑分层次、段落，提炼出5个左右图片中的精华信息、关键要点，生动地向读者描述图片的主要内容。注意排版、换行、emoji、标签的合理搭配，清楚地展现图片讲了什么"

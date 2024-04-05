@@ -1,6 +1,5 @@
 python-docx
 markdown
-jieba
 PyMuPDF
 openpyxl
 beautifulsoup4
