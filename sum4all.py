@@ -734,7 +734,7 @@ class sum4all(Plugin):
         file_size = os.path.getsize(file_path) // 1000  # 将文件大小转换为KB
         if file_size > int(self.max_file_size):
             logger.warning(f"文件大小超过限制({self.max_file_size}KB),不进行处理。文件大小: {file_size}KB")
-            raise ValueError(f"文件大小超过限制({self.max_file_size}KB),不进行处理。文件大小: {file_size}KB")
+            return None
         file_extension = os.path.splitext(file_path)[1][1:].lower()
         logger.info(f"extract_content: 文件类型为 {file_extension}")
 
@@ -742,7 +742,8 @@ class sum4all(Plugin):
 
         if not file_type:
             logger.error(f"不支持的文件扩展名: {file_extension}")
-            raise ValueError(f"不支持的文件扩展名: {file_extension}")
+            return None
+
         read_func = {
             'pdf': self.read_pdf,
             'docx': self.read_word,
@@ -756,7 +757,7 @@ class sum4all(Plugin):
 
         if not read_func:
             logger.error(f"不支持的文件类型: {file_type}")
-            raise ValueError(f"不支持的文件类型: {file_type}")
+            return None
         logger.info("extract_content: 文件内容提取完成")
         return read_func(file_path)
     def encode_image_to_base64(self, image_path):
