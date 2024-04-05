@@ -11,8 +11,6 @@ from common.expired_dict import ExpiredDict
 import os
 from docx import Document
 import markdown
-import tiktoken
-import jieba
 import fitz
 from openpyxl import load_workbook
 import csv
@@ -101,6 +99,7 @@ class sum4all(Plugin):
 
             self.file_sum_enabled = self.file_sum.get("enabled", False)
             self.file_sum_service = self.file_sum.get("service", "")
+            self.max_file_size = self.file_sum.get("max_file_size", 15000)
             self.file_sum_group = self.file_sum.get("group", True)
             self.file_sum_qa_prefix = self.file_sum.get("qa_prefix", "问")
             self.file_sum_prompt = self.file_sum.get("prompt", "")
@@ -157,12 +156,8 @@ class sum4all(Plugin):
                 new_content = content[len(self.image_sum_qa_prefix):]
                 self.params_cache[user_id]['prompt'] = new_content
                 logger.info('params_cache for user has been successfully updated.')            
-                if self.image_sum_service == "xunfei":
-                    self.handle_xunfei_image(self.params_cache[user_id]['last_image_base64'], e_context)
-                elif self.image_sum_service == "openai":
-                    self.handle_openai_image(self.params_cache[user_id]['last_image_base64'], e_context)
-                elif self.image_sum_service == "gemini":
-                    self.handle_gemini_image(self.params_cache[user_id]['last_image_base64'], e_context)
+                self.handle_image(self.params_cache[user_id]['last_image_base64'], e_context)
+
             # 如果存在最近一次处理的URL，触发URL理解函数
             elif 'last_url' in self.params_cache[user_id] and content.startswith(self.url_sum_qa_prefix):
                 logger.info('Content starts with the url_sum_qa_prefix.')
@@ -222,12 +217,8 @@ class sum4all(Plugin):
                 self.params_cache[user_id] = {}
                 self.params_cache[user_id]['last_image_base64'] = base64_image
                 logger.info('Updated last_image_base64 in params_cache for user.')
-                if self.image_sum_service == "xunfei":
-                    self.handle_xunfei_image(base64_image, e_context)
-                elif self.image_sum_service == "openai":
-                    self.handle_openai_image(base64_image, e_context)
-                elif self.image_sum_service == "gemini":
-                    self.handle_gemini_image(base64_image, e_context)
+                self.handle_image(base64_image, e_context)
+
             else:
                 logger.info("图片总结功能已禁用，不对图片内容进行处理")
             # 删除文件
@@ -726,13 +717,6 @@ class sum4all(Plugin):
             for row in reader:
                 content += ' '.join(row) + '\n'
         return content
-    def num_tokens_from_string(self, text):
-        try:
-            encoding = tiktoken.encoding_for_model("gpt-3.5-turbo")
-        except KeyError:
-            logger.debug(f"Warning: model not found. Using cl100k_base encoding.")
-            encoding = tiktoken.get_encoding("cl100k_base")
-        return len(encoding.encode(text))
     def read_html(self, file_path):
         with open(file_path, 'r', encoding='utf-8') as file:
             soup = BeautifulSoup(file, 'html.parser')
@@ -745,27 +729,12 @@ class sum4all(Plugin):
                 if hasattr(shape, "text"):
                     content += shape.text + '\n'
         return content
-    def split_text_chinese(self, text, overlap_tokens=500):
-        tokens = jieba.cut(text)
-        segments = []
-        segment_text = ""
-        for token in tokens:
-            temp_segment_text = segment_text + token
-            temp_segment_tokens_count = self.num_tokens_from_string(temp_segment_text)
-            if temp_segment_tokens_count >= self.max_tokens:
-                segments.append(segment_text)
-                previous_segment_text = segment_text
-                segment_text = previous_segment_text[-overlap_tokens:] + token if overlap_tokens > 0 else token
-            else:
-                segment_text = temp_segment_text
-
-        if segment_text:
-            segments.append(segment_text)
-        logger.debug(f"分段文本: {segments}")
-        return segments
     def extract_content(self, file_path):
         logger.info(f"extract_content: 提取文件内容，文件路径: {file_path}")
-
+        file_size = os.path.getsize(file_path) // 1000  # 将文件大小转换为KB
+        if file_size > self.max_file_size:
+            logger.warning(f"文件大小超过限制({self.max_file_size}KB),不进行处理。文件大小: {file_size}KB")
+            return None
         file_extension = os.path.splitext(file_path)[1][1:].lower()
         logger.info(f"extract_content: 文件类型为 {file_extension}")
 
@@ -805,173 +774,108 @@ class sum4all(Plugin):
             encoded = base64.b64encode(image_file.read()).decode('utf-8')
         return encoded
     # Function to handle OpenAI image processing
-    def handle_openai_image(self, base64_image, e_context):
-        logger.info("handle_openai_image_response: 解析OpenAI图像处理API的响应")
+    def handle_image(self, base64_image, e_context):
+        logger.info("handle_image: 解析图像处理API的响应")
         msg: ChatMessage = e_context["context"]["msg"]
         user_id = msg.from_user_id
         user_params = self.params_cache.get(user_id, {})
         prompt = user_params.get('prompt', self.image_sum_prompt)
 
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {self.open_ai_api_key}"
-        }
-
-        payload = {
-            "model": "gpt-4-vision-preview",
-            "messages": [
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": prompt
-                        },
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:image/jpeg;base64,{base64_image}"
+        if self.image_sum_service == "openai":
+            api_key = self.open_ai_api_key
+            api_base = f"{self.open_ai_api_base}/chat/completions"
+            model = "gpt-4-vision-preview"
+        elif self.image_sum_service == "xunfei":
+            api_key = self.xunfei_api_key
+            api_base = "https://spark.sum4all.site/v1/chat/completions"
+            model = "spark-chat-vision"
+        elif self.image_sum_service == "sum4all":
+            api_key = self.sum4all_key
+            api_base = "https://pro.sum4all.site/v1/chat/completions"
+            model = "sum4all-vision"
+        elif self.image_sum_service == "gemini":
+            api_key = self.gemini_key
+            api_base = "https://gemini.sum4all.site/v1/models/gemini-pro-vision:generateContent"
+            payload = {
+                "contents": [
+                    {
+                        "parts": [
+                            {"text": prompt},
+                            {
+                                "inline_data": {
+                                    "mime_type":"image/png",
+                                    "data": base64_image
+                                }
                             }
-                        }
-                    ]
+                        ]
+                    }
+                ],
+                "generationConfig": {
+                    "maxOutputTokens": 800
                 }
-            ],
-            "max_tokens": 3000
-        }
-
-        try:
-            response = requests.post(f"{self.open_ai_api_base}/chat/completions", headers=headers, json=payload)
-            response.raise_for_status()  # 增加对HTTP错误的检查
-            response_json = response.json()  # 定义response_json
-            # 确保响应中有 'choices' 键并且至少有一个元素
-            if "choices" in response_json and len(response_json["choices"]) > 0:
-                first_choice = response_json["choices"][0]
-                if "message" in first_choice and "content" in first_choice["message"]:
-                    # 从响应中提取 'content'
-                    response_content = first_choice["message"]["content"].strip()
-                    logger.info("LLM API response content")  # 记录响应内容
-                    reply_content = response_content
-                else:
-                    logger.error("Content not found in the response")
-                    reply_content = "Content not found in the LLM API response"
-            else:
-                logger.error("No choices available in the response")
-                reply_content = "No choices available in the LLM API response"
-        except Exception as e:
-            logger.error(f"Error processing LLM API response: {e}")
-            reply_content = f"An error occurred while processing LLM API response"
-
-        reply = Reply()
-        reply.type = ReplyType.TEXT
-        reply.content = f"{remove_markdown(reply_content)}\n\n💬5min内输入{self.image_sum_qa_prefix}+问题，可继续追问"  
-        e_context["reply"] = reply
-        e_context.action = EventAction.BREAK_PASS
-    def handle_gemini_image(self, base64_image, e_context):
-        logger.info("handle_gemini_image: 解析Gemini图像处理API的响应")
-        msg: ChatMessage = e_context["context"]["msg"]
-        user_id = msg.from_user_id
-        user_params = self.params_cache.get(user_id, {})
-        prompt = user_params.get('prompt', self.image_sum_prompt)
-        api_key = self.gemini_key
-        payload = {
-            "contents": [
-                {
-                    "parts": [
-                        {"text": prompt},
-                        {
-                            "inline_data": {
-                                "mime_type":"image/png",
-                                "data": base64_image
-                            }
-                        }
-                    ]
-                }
-            ],
-            "generationConfig": {
-                "maxOutputTokens": 800
             }
-        }
+            headers = {
+                "Content-Type": "application/json",
+                "x-goog-api-key": api_key
+            }
+        else:
+            logger.error(f"未知的image_sum_service配置: {self.image_sum_service}")
+            return
 
-        headers = {
-            "Content-Type": "application/json",
-            "x-goog-api-key": api_key
-        }
+        if self.image_sum_service != "gemini":
+            payload = {
+                "model": model,
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": prompt
+                            },
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": f"data:image/jpeg;base64,{base64_image}"
+                                }
+                            }
+                        ]
+                    }
+                ],
+                "max_tokens": 3000
+            }
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {api_key}"
+            }
 
         try:
-            response = requests.post(f"https://gemini.sum4all.site/v1/models/gemini-pro-vision:generateContent", headers=headers, json=payload)
+            response = requests.post(api_base, headers=headers, json=payload)
             response.raise_for_status()
             response_json = response.json()
-            # 提取响应中的文本内容
-            reply_content = response_json.get('candidates', [{}])[0].get('content', {}).get('parts', [{}])[0].get('text', 'No text found in the response')
-        except Exception as e:
-            reply_content = f"An error occurred while processing Gemini API response"
 
-        reply = Reply()
-        reply.type = ReplyType.TEXT
-        reply.content = f"{remove_markdown(reply_content)}\n\n💬5min内输入{self.image_sum_qa_prefix}+问题，可继续追问"  
-        e_context["reply"] = reply
-        e_context.action = EventAction.BREAK_PASS
-    def handle_xunfei_image(self, base64_image, e_context):
-        logger.info("handle_xunfei_image_response: 解析讯飞图像处理API的响应")
-        msg: ChatMessage = e_context["context"]["msg"]
-        user_id = msg.from_user_id
-        user_params = self.params_cache.get(user_id, {})
-        prompt = user_params.get('prompt', self.image_sum_prompt)
-
-        headers = {
-            "Content-Type": "application/json",
-            "X_API_KEY": self.xunfei_api_key,
-            "X_APP_ID": self.xunfei_app_id,
-            "X_API_SECRET": self.xunfei_api_secret
-        }
-
-        payload = {
-            "model": "spark-chat-vision",
-            "messages": [
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:image/jpeg;base64,{base64_image}"
-                            }
-                        },
-                        {
-                            "type": "text",
-                            "text": prompt
-                        }
-                    ]
-                }
-            ],
-            "max_tokens": 3000
-        }
-
-        try:
-            response = requests.post("https://spark.sum4all.site/v1/chat/completions", headers=headers, json=payload)
-            response.raise_for_status()  # 增加对HTTP错误的检查
-            response_json = response.json()  # 定义response_json
-            # 确保响应中有 'choices' 键并且至少有一个元素
-            if "choices" in response_json and len(response_json["choices"]) > 0:
-                first_choice = response_json["choices"][0]
-                if "message" in first_choice and "content" in first_choice["message"]:
-                    # 从响应中提取 'content'
-                    response_content = first_choice["message"]["content"].strip()
-                    logger.info("LLM API response content")  # 记录响应内容
-                    reply_content = response_content
-                else:
-                    logger.error("Content not found in the response")
-                    reply_content = "Content not found in the LLM API response"
+            if self.image_sum_service == "gemini":
+                reply_content = response_json.get('candidates', [{}])[0].get('content', {}).get('parts', [{}])[0].get('text', 'No text found in the response')
             else:
-                logger.error("No choices available in the response")
-                reply_content = "No choices available in the LLM API response"
+                if "choices" in response_json and len(response_json["choices"]) > 0:
+                    first_choice = response_json["choices"][0]
+                    if "message" in first_choice and "content" in first_choice["message"]:
+                        response_content = first_choice["message"]["content"].strip()
+                        logger.info("LLM API response content")
+                        reply_content = response_content
+                    else:
+                        logger.error("Content not found in the response")
+                        reply_content = "Content not found in the LLM API response"
+                else:
+                    logger.error("No choices available in the response")
+                    reply_content = "No choices available in the LLM API response"
         except Exception as e:
             logger.error(f"Error processing LLM API response: {e}")
             reply_content = f"An error occurred while processing LLM API response"
 
         reply = Reply()
         reply.type = ReplyType.TEXT
-        reply.content = f"{remove_markdown(reply_content)}\n\n💬5min内输入{self.image_sum_qa_prefix}+问题，可继续追问"  
+        reply.content = f"{remove_markdown(reply_content)}\n\n💬5min内输入{self.image_sum_qa_prefix}+问题，可继续追问"
         e_context["reply"] = reply
         e_context.action = EventAction.BREAK_PASS
     

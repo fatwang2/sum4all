@@ -1,6 +1,5 @@
 ## 用户交流
 [telegram频道](https://sum4all.site/telegram)\
-[即刻](https://sum4all.site/jike)\
 [X](https://sum4all.site/twitter)
 
 ## 友情赞助
@@ -42,7 +41,7 @@
 - 支持联网搜索
 - 支持多轮追问
 - 支持文章链接总结，且支持发送到在线笔记
-- 支持文件内容总结，包括pdf、doc、markdown、txt、xls、csv、html、ppt
+- 支持文件内容总结，包括pdf、docx、markdown、txt、xls、csv、html、ppt
 - 支持图片总结，包括png、jpeg、jpg
 - 支持视频、播客内容总结，包括抖音、b站、小红书、YouTube等
 - 支持多种内容总结服务，可自由组合
@@ -82,7 +81,7 @@
 | 服务 | 支持功能 | 特点 | 注册地址 | 图片介绍 |
 |------|----------|------|----------|-----------|
 | OpenAI | 搜索、文件、图片、绝大部分网页文章 | 无需额外申请服务，舍得花钱的话，效果最可控 | [OpenAI](https://platform.openai.com/account/api-keys) \| [LinkAI代理](https://sum4all.site/linkai) | ![OpenAI](picture/openai.png) |
-| sum4all | 搜索、文件、绝大部分网页文章 | 注册免费送1万token，邀请好友注册再各得5k| [sum4all](https://sum4all.site/key) | ![Sum4all](picture/sum4all.png) |
+| sum4all | 搜索、文件、图片、绝大部分网页文章 | 注册免费送1万token，邀请好友注册再各得5k，是openai官方价的五折| [sum4all](https://sum4all.site/key) | ![Sum4all](picture/sum4all.png) |
 | search1api | Google、Bing、Duckduckgo搜索 | 搜索聚合服务，无需注册，$0.99/1000次每个月| [search1api](https://search2ai.online/api)| ![search1api](picture/search1api.png) |
 | Gemini | 搜索、文件、图片、绝大部分网页文章 | Google最新大模型，免费 | [gemini](https://sum4all.site/google) | ![Gemini](picture/gemini.png) |
 | Perplexity | 搜索 | 国外的搜索总结服务，速度快，价格贵，自带大模型，需自行注册和付费 | [Perplexity](https://sum4all.site/perplexity) | ![Perplexity](picture/p.png) | ![Alt text](picture/WX20231201-004639@2x.png) |
@@ -104,8 +103,8 @@
     "service": "sum4all", #url总结服务，目前支持openai、sum4all、gemini、bibigpt、opensum
     "group": true, #url总结群聊开关
     "qa_enabled":true, #url总结追问开关
-    "qa_prefix":"问", #ulr总结追问前缀词
-    "prompt": "" #ulr总结prompt
+    "qa_prefix":"问", #url总结追问前缀词
+    "prompt": "" #url总结prompt
   },
   "search_sum": {
     "enabled": false, #搜索总结服务开关
