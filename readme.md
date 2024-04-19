@@ -19,6 +19,7 @@
 ## 微信插件
 ### 更新日志
 - V0.7.6，20240420，修复微信链接规则编号带来的解析失败问题
+- V0.7.5，20240405，sum4all service支持图片识别，模型为 gpt-4-vision-preview，合并简化代码
 - V0.7.4，20240316，支持search1api搜索聚合服务，google、bing、duckduckgo自由切换
 - V0.7.3，20240217，修改Gemini代理，修改为更稳定的cf代理
 - V0.7.2，20240206，增加图片压缩逻辑，修复图片过大时无法总结的bug
@@ -116,7 +117,7 @@
   },
   "image_sum": {
     "enabled": false, #图片总结服务开关
-    "service": "gemini", #图片总结服务，目前支持openai、gemini、xunfei
+    "service": "gemini", #图片总结服务，目前支持openai、sum4all、gemini、xunfei
     "group": true, #图片总结群聊开关
     "qa_prefix":"问", #图片总结追问前缀词
     "prompt": "" #图片总结prompt
