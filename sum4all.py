@@ -18,6 +18,8 @@ from bs4 import BeautifulSoup
 from pptx import Presentation
 from PIL import Image
 import base64
+import html
+
 
 
 EXTENSION_TO_TYPE = {
@@ -35,7 +37,7 @@ EXTENSION_TO_TYPE = {
     name="sum4all",
     desire_priority=2,
     desc="A plugin for summarizing all things",
-    version="0.7.5",
+    version="0.7.6",
     author="fatwang2",
 )
 
@@ -225,6 +227,7 @@ class sum4all(Plugin):
             os.remove(image_path)
             logger.info(f"文件 {image_path} 已删除")
         elif context.type == ContextType.SHARING:  #匹配卡片分享
+            content = html.unescape(content)
             if unsupported_urls:  #匹配不支持总结的卡片
                 if isgroup:  ##群聊中忽略
                     return
