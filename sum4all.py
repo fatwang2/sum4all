@@ -37,7 +37,7 @@ EXTENSION_TO_TYPE = {
     name="sum4all",
     desire_priority=2,
     desc="A plugin for summarizing all things",
-    version="0.7.6",
+    version="0.7.7",
     author="fatwang2",
 )
 
@@ -226,7 +226,7 @@ class sum4all(Plugin):
             # 删除文件
             os.remove(image_path)
             logger.info(f"文件 {image_path} 已删除")
-        elif context.type == ContextType.SHARING:  #匹配卡片分享
+        elif context.type == ContextType.SHARING and self.url_sum_enabled:  #匹配卡片分享
             content = html.unescape(content)
             if unsupported_urls:  #匹配不支持总结的卡片
                 if isgroup:  ##群聊中忽略
@@ -257,7 +257,7 @@ class sum4all(Plugin):
                     self.call_service(content, e_context, "sum")
                     return
             
-        elif url_match: #匹配URL链接
+        elif url_match and self.url_sum_enabled: #匹配URL链接
             if unsupported_urls:  #匹配不支持总结的网址
                 logger.info("[sum4all] Unsupported URL : %s", content)
                 reply = Reply(type=ReplyType.TEXT, content="不支持总结小程序和视频号")
