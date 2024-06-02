@@ -787,7 +787,7 @@ class sum4all(Plugin):
         if self.image_sum_service == "openai":
             api_key = self.open_ai_api_key
             api_base = f"{self.open_ai_api_base}/chat/completions"
-            model = "gpt-4-vision-preview"
+            model = "gpt-4o"
         elif self.image_sum_service == "xunfei":
             api_key = self.xunfei_api_key
             api_base = "https://spark.sum4all.site/v1/chat/completions"

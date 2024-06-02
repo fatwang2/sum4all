@@ -18,6 +18,7 @@
 
 ## 微信插件
 ### 更新日志
+- V0.7.7，20240602，切换service为openai和sum4all时的图片识别模型为gpt-4o
 - V0.7.6，20240420，修复微信链接规则编号带来的解析失败问题
 - V0.7.5，20240405，sum4all service支持图片识别，模型为 gpt-4-vision-preview，合并简化代码
 - V0.7.4，20240316，支持search1api搜索聚合服务，google、bing、duckduckgo自由切换
