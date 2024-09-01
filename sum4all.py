@@ -37,7 +37,7 @@ EXTENSION_TO_TYPE = {
     name="sum4all",
     desire_priority=2,
     desc="A plugin for summarizing all things",
-    version="0.7.8",
+    version="0.7.9",
     author="fatwang2",
 )
 
@@ -340,7 +340,7 @@ class sum4all(Plugin):
         elif self.url_sum_service == "gemini":
             api_key = self.gemini_key
             model = "gemini"
-            api_base = "https://gemini.sum4all.site/v1/models/gemini-pro:generateContent?key="
+            api_base = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent"
         else:
             logger.error(f"未知的sum_service配置: {self.url_sum_service}")
             return
@@ -484,7 +484,7 @@ class sum4all(Plugin):
         elif self.search_sum_service == "gemini":
             api_key = self.gemini_key
             model = "gemini"
-            api_base = "https://gemini.sum4all.site/v1/models/gemini-pro:generateContent"
+            api_base = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent"
 
         else:
             logger.error(f"未知的search_service配置: {self.search_sum_service}")
@@ -596,7 +596,7 @@ class sum4all(Plugin):
         elif self.file_sum_service == "gemini":
             api_key = self.gemini_key
             model = "gemini"
-            api_base = "https://gemini.sum4all.site/v1/models/gemini-pro:generateContent"
+            api_base = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent"
         else:
             logger.error(f"未知的sum_service配置: {self.file_sum_service}")
             return
@@ -798,7 +798,7 @@ class sum4all(Plugin):
             model = "sum4all-vision"
         elif self.image_sum_service == "gemini":
             api_key = self.gemini_key
-            api_base = "https://gemini.sum4all.site/v1/models/gemini-pro-vision:generateContent"
+            api_base = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent"
             payload = {
                 "contents": [
                     {
