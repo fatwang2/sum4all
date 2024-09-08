@@ -764,18 +764,26 @@ class sum4all(Plugin):
         logger.info("extract_content: 文件内容提取完成")
         return read_func(file_path)
     def encode_image_to_base64(self, image_path):
-        # 打开图片
-        img = Image.open(image_path)
-        # 只有当图片的宽度大于1024像素时，才调整图片大小
-        if img.width > 1024:
-            img = img.resize((1024, int(img.height*1024/img.width)))
-            # 将调整大小后的图片保存回原文件
-            img.save(image_path)
+        logger.info(f"开始处理图片: {image_path}")
+        try:
+            with Image.open(image_path) as img:
+                logger.info(f"成功打开图片. 原始大小: {img.size}")
+                if img.width > 1024:
+                    new_size = (1024, int(img.height*1024/img.width))
+                    img = img.resize(new_size)
+                    logger.info(f"调整图片大小至: {new_size}")
+                
+                img_byte_arr = io.BytesIO()
+                img.save(img_byte_arr, format='PNG')
+                img_byte_arr = img_byte_arr.getvalue()
+                logger.info(f"图片转换为PNG完成. 大小: {len(img_byte_arr)} 字节")
 
-        # 打开调整大小后的图片，读取并进行base64编码
-        with open(image_path, "rb") as image_file:
-            encoded = base64.b64encode(image_file.read()).decode('utf-8')
-        return encoded
+            encoded = base64.b64encode(img_byte_arr).decode('ascii')
+            logger.info(f"Base64编码完成. 编码后长度: {len(encoded)}")
+            return encoded
+        except Exception as e:
+            logger.error(f"图片编码过程中发生错误: {str(e)}", exc_info=True)
+            raise
     # Function to handle OpenAI image processing
     def handle_image(self, base64_image, e_context):
         logger.info("handle_image: 解析图像处理API的响应")
@@ -787,7 +795,7 @@ class sum4all(Plugin):
         if self.image_sum_service == "openai":
             api_key = self.open_ai_api_key
             api_base = f"{self.open_ai_api_base}/chat/completions"
-            model = "gpt-4o"
+            model = "gpt-4o-mini"
         elif self.image_sum_service == "xunfei":
             api_key = self.xunfei_api_key
             api_base = "https://spark.sum4all.site/v1/chat/completions"
@@ -812,15 +820,14 @@ class sum4all(Plugin):
                             }
                         ]
                     }
-                ],
-                "generationConfig": {
-                    "maxOutputTokens": 800
-                }
+                ]
             }
             headers = {
                 "Content-Type": "application/json",
                 "x-goog-api-key": api_key
             }
+            logger.info(f"准备发送请求. Payload大小: {len(json.dumps(payload))} 字节")
+
         else:
             logger.error(f"未知的image_sum_service配置: {self.image_sum_service}")
             return
@@ -859,6 +866,7 @@ class sum4all(Plugin):
 
             if self.image_sum_service == "gemini":
                 reply_content = response_json.get('candidates', [{}])[0].get('content', {}).get('parts', [{}])[0].get('text', 'No text found in the response')
+                logger.info(f"成功解析Gemini响应. 回复内容长度: {len(reply_content)}")
             else:
                 if "choices" in response_json and len(response_json["choices"]) > 0:
                     first_choice = response_json["choices"][0]
