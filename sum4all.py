@@ -861,8 +861,11 @@ class sum4all(Plugin):
 
         try:
             response = requests.post(api_base, headers=headers, json=payload)
+            logger.info(f"API请求已发送. 状态码: {response.status_code}")
             response.raise_for_status()
+            logger.info("API响应状态码正常，开始解析JSON")
             response_json = response.json()
+            logger.info("JSON解析完成")
 
             if self.image_sum_service == "gemini":
                 reply_content = response_json.get('candidates', [{}])[0].get('content', {}).get('parts', [{}])[0].get('text', 'No text found in the response')
