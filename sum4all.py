@@ -771,12 +771,12 @@ class sum4all(Plugin):
                 if img.width > 1024:
                     new_size = (1024, int(img.height*1024/img.width))
                     img = img.resize(new_size)
+                    img.save(image_path)  # 保存调整大小后的图片
                     logger.info(f"调整图片大小至: {new_size}")
-                
-                img_byte_arr = io.BytesIO()
-                img.save(img_byte_arr, format='PNG')
-                img_byte_arr = img_byte_arr.getvalue()
-                logger.info(f"图片转换为PNG完成. 大小: {len(img_byte_arr)} 字节")
+
+            with open(image_path, "rb") as image_file:
+                img_byte_arr = image_file.read()
+                logger.info(f"读取图片完成. 大小: {len(img_byte_arr)} 字节")
 
             encoded = base64.b64encode(img_byte_arr).decode('ascii')
             logger.info(f"Base64编码完成. 编码后长度: {len(encoded)}")
