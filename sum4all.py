@@ -330,7 +330,7 @@ class sum4all(Plugin):
     def handle_url(self, content, e_context):
         logger.info('Handling Sum4All request...')
         # 根据sum_service的值选择API密钥和基础URL
-        if self.url_sum_service == "openai" or self.url_sum_service == "azure":
+        if self.url_sum_service == "openai":
             api_key = self.open_ai_api_key
             api_base = self.open_ai_api_base
             model = self.model
@@ -474,7 +474,7 @@ class sum4all(Plugin):
         e_context.action = EventAction.BREAK_PASS    
     def handle_search(self, content, e_context):
         # 根据sum_service的值选择API密钥和基础URL
-        if self.search_sum_service == "openai" or self.search_sum_service == "azure":
+        if self.search_sum_service == "openai":
             api_key = self.open_ai_api_key
             api_base = self.open_ai_api_base
             model = self.model
@@ -586,9 +586,13 @@ class sum4all(Plugin):
     def handle_file(self, content, e_context):
         logger.info("handle_file: 向LLM发送内容总结请求")
         # 根据sum_service的值选择API密钥和基础URL
-        if self.file_sum_service == "openai" or self.file_sum_service == "azure":
+        if self.file_sum_service == "openai":
             api_key = self.open_ai_api_key
             api_base = self.open_ai_api_base
+            model = self.model
+        elif self.file_sum_service == "azure":
+            api_key = self.open_ai_api_key
+            api_base = f"{self.open_ai_api_base}/openai/deployments/{self.azure_deployment_id}/chat/completions?api-version=2024-02-15-preview"
             model = self.model
         elif self.file_sum_service == "sum4all":
             api_key = self.sum4all_key
@@ -619,6 +623,19 @@ class sum4all(Plugin):
             "generationConfig": {
                 "maxOutputTokens": 800
             }
+            }
+            api_url = api_base
+        elif self.file_sum_service == "azure":
+            headers = {
+                "Content-Type": "application/json",
+                "api-key": api_key
+            }
+            data = {
+                "model": model,
+                "messages": [
+                    {"role": "system", "content": prompt},
+                    {"role": "user", "content": content}
+                ]
             }
             api_url = api_base
         else:
