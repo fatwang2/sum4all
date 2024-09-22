@@ -43,6 +43,7 @@
     "open_ai_api_key": "",
     "model": "gpt-3.5-turbo",
     "open_ai_api_base": "https://api.openai.com/v1",
+    "azure_deployment_id": "",
     "xunfei_app_id": "",
     "xunfei_api_key": "",
     "xunfei_api_secret": "",
