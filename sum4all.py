@@ -78,6 +78,7 @@ class sum4all(Plugin):
             self.open_ai_api_key = self.keys.get("open_ai_api_key", "")
             self.model = self.keys.get("model", "gpt-3.5-turbo")
             self.open_ai_api_base = self.keys.get("open_ai_api_base", "https://api.openai.com/v1")
+            self.azure_deployment_id = self.keys.get("azure_deployment_id", "")
             self.xunfei_app_id = self.keys.get("xunfei_app_id", "")
             self.xunfei_api_key = self.keys.get("xunfei_api_key", "")
             self.xunfei_api_secret = self.keys.get("xunfei_api_secret", "")
@@ -273,14 +274,14 @@ class sum4all(Plugin):
                 return
     def call_service(self, content, e_context, service_type):
         if service_type == "search":
-            if self.search_sum_service == "openai" or self.search_sum_service == "sum4all" or self.search_sum_service == "gemini":
+            if self.search_sum_service == "openai" or self.search_sum_service == "sum4all" or self.search_sum_service == "gemini" or self.search_sum_service == "azure":
                 self.handle_search(content, e_context)
             elif self.search_sum_service == "perplexity":
                 self.handle_perplexity(content, e_context)
         elif service_type == "sum":
             if self.url_sum_service == "bibigpt":
                 self.handle_bibigpt(content, e_context)
-            elif self.url_sum_service == "openai" or self.url_sum_service == "sum4all" or self.url_sum_service == "gemini":
+            elif self.url_sum_service == "openai" or self.url_sum_service == "sum4all" or self.url_sum_service == "gemini" or self.search_sum_service == "azure":
                 self.handle_url(content, e_context)
             elif self.url_sum_service == "opensum":
                 self.handle_opensum(content, e_context)
@@ -589,6 +590,10 @@ class sum4all(Plugin):
             api_key = self.open_ai_api_key
             api_base = self.open_ai_api_base
             model = self.model
+        elif self.file_sum_service == "azure":
+            api_key = self.open_ai_api_key
+            api_base = f"{self.open_ai_api_base}/openai/deployments/{self.azure_deployment_id}/chat/completions?api-version=2024-02-15-preview"
+            model = self.model
         elif self.file_sum_service == "sum4all":
             api_key = self.sum4all_key
             api_base = "https://pro.sum4all.site/v1"
@@ -618,6 +623,19 @@ class sum4all(Plugin):
             "generationConfig": {
                 "maxOutputTokens": 800
             }
+            }
+            api_url = api_base
+        elif self.file_sum_service == "azure":
+            headers = {
+                "Content-Type": "application/json",
+                "api-key": api_key
+            }
+            data = {
+                "model": model,
+                "messages": [
+                    {"role": "system", "content": prompt},
+                    {"role": "user", "content": content}
+                ]
             }
             api_url = api_base
         else:
@@ -796,6 +814,14 @@ class sum4all(Plugin):
             api_key = self.open_ai_api_key
             api_base = f"{self.open_ai_api_base}/chat/completions"
             model = "gpt-4o-mini"
+        elif self.image_sum_service == "azure":
+            api_key = self.open_ai_api_key
+            api_base = f"{self.open_ai_api_base}/openai/deployments/{self.azure_deployment_id}/chat/completions?api-version=2024-02-15-preview"
+            headers = {
+                "Content-Type": "application/json",
+                "api-key": api_key
+            }
+            model = "gpt-4o-mini"
         elif self.image_sum_service == "xunfei":
             api_key = self.xunfei_api_key
             api_base = "https://spark.sum4all.site/v1/chat/completions"
@@ -854,6 +880,8 @@ class sum4all(Plugin):
                 ],
                 "max_tokens": 3000
             }
+        
+        if self.image_sum_service != "azure":
             headers = {
                 "Content-Type": "application/json",
                 "Authorization": f"Bearer {api_key}"
