@@ -113,7 +113,7 @@
   },
   "file_sum": {
     "enabled": false, #文件总结服务开关
-    "service": "sum4all", #文件总结服务，目前支持openai、sum4all、gemini
+    "service": "sum4all", #文件总结服务，目前支持openai、sum4all、gemini、azure
     "max_file_size": "15000", #支持的文件大小，单位kb，最终能否总结取决于有大模型的token限制
     "group": true, #文件总结群聊开关
     "qa_prefix":"问", #文件总结追问前缀词
@@ -121,7 +121,7 @@
   },
   "image_sum": {
     "enabled": false, #图片总结服务开关
-    "service": "gemini", #图片总结服务，目前支持openai、sum4all、gemini、xunfei
+    "service": "gemini", #图片总结服务，目前支持openai、sum4all、gemini、xunfei、azure
     "group": true, #图片总结群聊开关
     "qa_prefix":"问", #图片总结追问前缀词
     "prompt": "" #图片总结prompt
@@ -139,6 +139,7 @@
     "open_ai_api_key": "", #如选openai，则必填
     "model": "gpt-3.5-turbo", #openai模型
     "open_ai_api_base": "https://api.openai.com/v1", #openai请求地址
+    "azure_deployment_id": "", #azure部署名，如选azure，则必填，并且还需填写open_ai_api_key、model、open_ai_api_base
     "xunfei_app_id": "", #讯飞大模型appid，如选xunfei，则必填
     "xunfei_api_key": "", #讯飞大模型apikey，如选xunfei，则必填
     "xunfei_api_secret": "", #讯飞大模型apisecret，如选xunfei，则必填
