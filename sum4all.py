@@ -836,33 +836,23 @@ class sum4all(Plugin):
             api_key = self.gemini_key
             api_base = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent"
             logger.info(f"API Key: {self.gemini_key}") 
-            payload = json.dumps({
-            "contents": [
-                {
+            payload = {
+            "contents": [{
                 "parts": [
-                    {
-                    "text": prompt
-                    },
-                    {
-                    "inline_data": {
-                        "mime_type": "image/png",
-                        "data": base64_image
-                    }
-                    }
+                {"text": prompt},
+                {"inline_data": {"mime_type": "image/png", "data": base64_image}}
                 ]
-                }
-            ]
-            })
+            }]
+            }
             headers = {
                 "Content-Type": "application/json",
                 "x-goog-api-key": api_key
             }
             logger.info(f"Gemini API request preview:")
-            logger.info(f"Headers: {headers}")
-            logger.info(f"Payload structure: {json.dumps(payload, indent=2)[:500]}...")  # 显示payload结构的前500个字符
-            logger.info(f"Prompt used: {prompt}")
-            logger.info(f"Base64 image data preview: {base64_image[:50]}...")
-            logger.info(f"准备发送请求. Payload大小: {len(json.dumps(payload))} 字节")
+            logger.info(f"URL: {api_base}")
+            logger.info(f"Headers: {json.dumps(headers, indent=2)}")
+            logger.info(f"Payload: {json.dumps(payload, indent=2)}")
+
         else:
             logger.error(f"未知的image_sum_service配置: {self.image_sum_service}")
             return
@@ -897,8 +887,7 @@ class sum4all(Plugin):
             }
 
         try:
-            response = requests.request("POST", api_base, headers=headers, data=payload)
-
+            response = requests.post(api_base, headers=headers, json=payload)
             logger.info(f"API请求已发送. 状态码: {response.status_code}")
             if response.status_code != 200:
                 logger.error(f"API request failed. Status code: {response.status_code}")
