@@ -826,29 +826,17 @@ class sum4all(Plugin):
             api_base = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent"
             payload = {
                 "contents": [
-
                     {
-
                         "parts": [
-
                             {"text": prompt},
-
                             {
-
                                 "inline_data": {
-
                                     "mime_type":"image/png",
-
                                     "data": base64_image
-
                                 }
-
                             }
-
                         ]
-
                     }
-
                 ],
                 "generationConfig": {
                     "maxOutputTokens": 800
