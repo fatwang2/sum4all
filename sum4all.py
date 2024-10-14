@@ -885,7 +885,6 @@ class sum4all(Plugin):
                 ],
                 "max_tokens": 3000
             }
-
         try:
             response = requests.post(api_base, headers=headers, json=payload)
             response.raise_for_status()
