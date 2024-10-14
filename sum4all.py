@@ -782,29 +782,18 @@ class sum4all(Plugin):
         logger.info("extract_content: 文件内容提取完成")
         return read_func(file_path)
     def encode_image_to_base64(self, image_path):
-        logger.info(f"开始处理图片: {image_path}")
-        try:
-            with Image.open(image_path) as img:
-                logger.info(f"成功打开图片. 原始大小: {img.size}")
-                if img.width > 1024:
-                    new_size = (1024, int(img.height*1024/img.width))
-                    img = img.resize(new_size)
-                    img.save(image_path)  # 保存调整大小后的图片
-                    logger.info(f"调整图片大小至: {new_size}")
+        # 打开图片
+        img = Image.open(image_path)
+        # 只有当图片的宽度大于1024像素时，才调整图片大小
+        if img.width > 1024:
+            img = img.resize((1024, int(img.height*1024/img.width)))
+            # 将调整大小后的图片保存回原文件
+            img.save(image_path)
 
-            with open(image_path, "rb") as image_file:
-                img_byte_arr = image_file.read()
-                logger.info(f"读取图片完成. 大小: {len(img_byte_arr)} 字节")
-
-            encoded = base64.b64encode(img_byte_arr).decode('ascii')
-            logger.info(f"Base64编码完成. 编码后长度: {len(encoded)}")
-            logger.info(f"Base64 string preview: {encoded[:50]}...")
-
-            return encoded
-        except Exception as e:
-            logger.error(f"图片编码过程中发生错误: {str(e)}", exc_info=True)
-            raise
-    # Function to handle OpenAI image processing
+        # 打开调整大小后的图片，读取并进行base64编码
+        with open(image_path, "rb") as image_file:
+            encoded = base64.b64encode(image_file.read()).decode('utf-8')
+        return encoded
     def handle_image(self, base64_image, e_context):
         logger.info("handle_image: 解析图像处理API的响应")
         msg: ChatMessage = e_context["context"]["msg"]
@@ -835,7 +824,6 @@ class sum4all(Plugin):
         elif self.image_sum_service == "gemini":
             api_key = self.gemini_key
             api_base = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent"
-            logger.info(f"API Key: {self.gemini_key}") 
             payload = {
             "contents": [{
                 "parts": [
@@ -848,10 +836,6 @@ class sum4all(Plugin):
                 "Content-Type": "application/json",
                 "x-goog-api-key": api_key
             }
-            logger.info(f"Gemini API request preview:")
-            logger.info(f"URL: {api_base}")
-            logger.info(f"Headers: {json.dumps(headers, indent=2)}")
-            logger.info(f"Payload: {json.dumps(payload, indent=2)}")
 
         else:
             logger.error(f"未知的image_sum_service配置: {self.image_sum_service}")
@@ -888,14 +872,8 @@ class sum4all(Plugin):
 
         try:
             response = requests.post(api_base, headers=headers, json=payload)
-            logger.info(f"API请求已发送. 状态码: {response.status_code}")
-            if response.status_code != 200:
-                logger.error(f"API request failed. Status code: {response.status_code}")
-                logger.error(f"Response content: {response.text[:500]}...")
             response.raise_for_status()
-            logger.info("API响应状态码正常，开始解析JSON")
             response_json = response.json()
-            logger.info("JSON解析完成")
 
             if self.image_sum_service == "gemini":
                 reply_content = response_json.get('candidates', [{}])[0].get('content', {}).get('parts', [{}])[0].get('text', 'No text found in the response')
