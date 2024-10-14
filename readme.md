@@ -18,6 +18,7 @@
 
 ## 微信插件
 ### 更新日志
+- V0.7.11，20240903，文件和图片模型支持Azure模型，修复Gemini的图片总结bug
 - V0.7.10，20240902，优化爬取服务，更稳定，更新OpenAI图片模型为gpt-4o-mini，sum4all的文字和图片模型均为gpt-4o-mini
 - V0.7.9，20240825，切换Gemini的图片、文字模型为Gemini 1.5 Flash，去掉代理，改为直连模式，国内服务器无法访问
 - V0.7.8，20240602，切换service为openai和sum4all时的图片识别模型为gpt-4o
@@ -81,6 +82,7 @@
 | sum4all | 搜索、文件、图片、绝大部分网页文章 | 注册免费送1万token，邀请好友注册再各得5k，是openai官方价的五折| [sum4all](https://sum4all.site/key) | ![Sum4all](picture/sum4all.png) |
 | search1api | Google、Bing、Duckduckgo搜索 | 搜索聚合服务，无需注册，$0.99/1000次每个月| [search1api](https://search2ai.online/api)| ![search1api](picture/search1api.png) |
 | Gemini | 搜索、文件、图片、绝大部分网页文章 | Google最新大模型，免费 | [gemini](https://sum4all.site/google) | ![Gemini](picture/gemini.png) |
+| Azure | 文件、图片 | 微软部署的OpenAI | [Azure](https://oai.azure.com) | ![Azure](picture/azure.png) |
 | Perplexity | 搜索 | 国外的搜索总结服务，速度快，价格贵，自带大模型，需自行注册和付费 | [Perplexity](https://sum4all.site/perplexity) | ![Perplexity](picture/p.png) | ![Alt text](picture/WX20231201-004639@2x.png) |
 | 讯飞 | 图片 | 讯飞星火大模型的图片理解功能，免费200万token，随便用 | [xunfei](https://sum4all.site/xunfei) | ![Perplexity](picture/讯飞.png) |
 | flomo | 记笔记 | 邀请码:OTY0，可免费得14天pro会员 | [flomo](https://sum4all.site/flomo) | ![flomo](picture/flomo-api.jpg) |
