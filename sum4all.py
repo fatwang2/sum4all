@@ -835,7 +835,7 @@ class sum4all(Plugin):
         elif self.image_sum_service == "gemini":
             api_key = self.gemini_key
             api_base = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent"
-            logger.info(f"API Key used: {api_key[:5]}...{api_key[-5:]}") 
+            logger.info(f"API Key: {self.gemini_key}") 
             payload = {
                 "contents": [
                     {
@@ -843,7 +843,7 @@ class sum4all(Plugin):
                             {"text": prompt},
                             {
                                 "inline_data": {
-                                    "mime_type":"image/png",
+                                    "mime_type":"image/jpeg",
                                     "data": base64_image
                                 }
                             }
