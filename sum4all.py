@@ -804,6 +804,10 @@ class sum4all(Plugin):
         if self.image_sum_service == "openai":
             api_key = self.open_ai_api_key
             api_base = f"{self.open_ai_api_base}/chat/completions"
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {api_key}"
+            }
             model = "gpt-4o-mini"
         elif self.image_sum_service == "azure":
             api_key = self.open_ai_api_key
@@ -817,10 +821,18 @@ class sum4all(Plugin):
             api_key = self.xunfei_api_key
             api_base = "https://spark.sum4all.site/v1/chat/completions"
             model = "spark-chat-vision"
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {api_key}"
+            }
         elif self.image_sum_service == "sum4all":
             api_key = self.sum4all_key
             api_base = "https://pro.sum4all.site/v1/chat/completions"
             model = "sum4all-vision"
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {api_key}"
+            }
         elif self.image_sum_service == "gemini":
             api_key = self.gemini_key
             api_base = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent"
@@ -872,10 +884,6 @@ class sum4all(Plugin):
                     }
                 ],
                 "max_tokens": 3000
-            }        
-            headers = {
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {api_key}"
             }
 
         try:
