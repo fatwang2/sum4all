@@ -872,9 +872,7 @@ class sum4all(Plugin):
                     }
                 ],
                 "max_tokens": 3000
-            }
-        
-        if self.image_sum_service != "azure":
+            }        
             headers = {
                 "Content-Type": "application/json",
                 "Authorization": f"Bearer {api_key}"
