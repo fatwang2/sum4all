@@ -780,6 +780,8 @@ class sum4all(Plugin):
 
             encoded = base64.b64encode(img_byte_arr).decode('ascii')
             logger.info(f"Base64编码完成. 编码后长度: {len(encoded)}")
+            logger.info(f"Base64 string preview: {encoded[:50]}...")
+
             return encoded
         except Exception as e:
             logger.error(f"图片编码过程中发生错误: {str(e)}", exc_info=True)
