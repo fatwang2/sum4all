@@ -37,7 +37,7 @@ EXTENSION_TO_TYPE = {
     name="sum4all",
     desire_priority=2,
     desc="A plugin for summarizing all things",
-    version="0.7.10",
+    version="0.7.11",
     author="fatwang2",
 )
 
@@ -887,7 +887,6 @@ class sum4all(Plugin):
 
             if self.image_sum_service == "gemini":
                 reply_content = response_json.get('candidates', [{}])[0].get('content', {}).get('parts', [{}])[0].get('text', 'No text found in the response')
-                logger.info(f"成功解析Gemini响应. 回复内容长度: {len(reply_content)}")
             else:
                 if "choices" in response_json and len(response_json["choices"]) > 0:
                     first_choice = response_json["choices"][0]
