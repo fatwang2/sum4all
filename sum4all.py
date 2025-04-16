@@ -19,8 +19,18 @@ from pptx import Presentation
 from PIL import Image
 import base64
 import html
+import importlib.util
+import urllib3
 
+# 禁用不安全请求警告
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
+# 检查是否安装了openai
+try:
+    from openai import OpenAI
+    has_openai = True
+except ImportError:
+    has_openai = False
 
 EXTENSION_TO_TYPE = {
     'pdf': 'pdf',
@@ -84,6 +94,11 @@ class sum4all(Plugin):
             self.xunfei_api_secret = self.keys.get("xunfei_api_secret", "")
             self.perplexity_key = self.keys.get("perplexity_key", "")
             self.flomo_key = self.keys.get("flomo_key", "")
+            self.aliyun_key = self.keys.get("aliyun_key", "")
+            self.aliyun_base_url = self.keys.get("aliyun_base_url", "https://dashscope.aliyuncs.com/compatible-mode/v1")
+            self.aliyun_model = self.keys.get("aliyun_model", "qwen-max")
+            self.aliyun_vl_model = self.keys.get("aliyun_vl_model", "qwen-vl-max-latest")
+            self.aliyun_sum_model = self.keys.get("aliyun_sum_model", "qwen-long")
 
             # 提取sum服务的配置
             self.url_sum_enabled = self.url_sum.get("enabled", False)
@@ -281,10 +296,18 @@ class sum4all(Plugin):
         elif service_type == "sum":
             if self.url_sum_service == "bibigpt":
                 self.handle_bibigpt(content, e_context)
-            elif self.url_sum_service == "openai" or self.url_sum_service == "sum4all" or self.url_sum_service == "gemini" or self.search_sum_service == "azure":
+            elif self.url_sum_service == "openai":
                 self.handle_url(content, e_context)
+            elif self.url_sum_service == "sum4all":
+                self.handle_sum4all(content, e_context)
+            elif self.url_sum_service == "gemini":
+                self.handle_gemini(content, e_context)
+            elif self.url_sum_service == "azure":
+                self.handle_azure(content, e_context)
             elif self.url_sum_service == "opensum":
                 self.handle_opensum(content, e_context)
+            elif self.url_sum_service == "aliyun":
+                self.handle_aliyun_url(content, e_context)
         elif service_type == "note":
             if self.note_service == "flomo":
                 self.handle_note(content, e_context)
@@ -327,69 +350,213 @@ class sum4all(Plugin):
             if short_url:
                 return short_url
         return None
+    def get_webpage_content(self, url):
+        """获取网页内容"""
+        try:
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+                'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
+                'Accept-Encoding': 'gzip, deflate, br',
+                'Connection': 'keep-alive',
+                'Upgrade-Insecure-Requests': '1',
+                'Cache-Control': 'max-age=0'
+            }
+
+            # 添加调试日志
+            logger.debug(f"Checking URL for weixin: url='{url}', contains_weixin={'weixin.qq.com' in url}")
+            # 修改判断标准：检查URL是否包含 weixin.qq.com
+            if "weixin.qq.com" in url:
+                logger.info(f"检测到微信相关域名，尝试直接获取内容: {url}")
+                # 更新请求头，加入 Referer
+                headers['Referer'] = 'https://mp.weixin.qq.com/' # Referer 保持 mp.
+                response = requests.get(url, headers=headers, verify=False, timeout=15)
+                response.raise_for_status()
+                # 记录响应头中的 Content-Type
+                content_type_header = response.headers.get('Content-Type')
+                logger.debug(f"Response Content-Type header: {content_type_header}")
+                # 移除 apparent_encoding 的猜测，强制使用 UTF-8
+                # response.encoding = response.apparent_encoding 
+                html_content_bytes = response.content
+                html_text = html_content_bytes.decode('utf-8', errors='replace')
+                # 记录解码后的repr
+                logger.debug(f"Decoded html_text (repr): {repr(html_text[:500])}...")
+                
+                # 使用强制解码后的文本进行解析
+                soup = BeautifulSoup(html_text, 'html.parser')
+                
+                # 查找标题 (可选, 主要用于调试)
+                title_tag = soup.find('h1', class_='rich_media_title') or \
+                            soup.find('h1', id='activity-name')
+                if title_tag:
+                    logger.info(f"微信文章标题: {title_tag.get_text(strip=True)}")
+                    extracted_title = title_tag.get_text(strip=True)
+                else:
+                    logger.warning("未找到微信文章标题标签")
+                    extracted_title = None
+
+                # 查找正文，优先 rich_media_content
+                content_tag = soup.find('div', class_='rich_media_content') or \
+                             soup.find('div', id='js_content')
+                             
+                if content_tag:
+                    # 清理不需要的标签
+                    for element in content_tag(['script', 'style', 'iframe', 'img', 'video']):
+                        element.decompose()
+                    # 提取清理后的文本
+                    text = content_tag.get_text(separator='\n', strip=True)
+                    logger.info("微信公众号内容获取并清理成功")
+                    # 记录 get_text 后的 repr
+                    logger.debug(f"Text after get_text (repr): {repr(text[:500])}...")
+                else:
+                    logger.error("无法从微信公众号页面提取正文内容 (rich_media_content 或 js_content)")
+                    return None, None # 返回 None 内容和 None 标题
+            else:
+                # 使用jina.ai预处理URL
+                jina_url = f"https://r.jina.ai/{url}"
+                logger.info(f"非微信域名，使用jina.ai预处理URL: {jina_url}")
+                
+                # 获取jina.ai处理后的内容
+                response = requests.get(jina_url, headers=headers, verify=False, timeout=20) # 增加超时
+                response.raise_for_status()
+                # Jina 返回的是纯文本，直接使用
+                text = response.text
+                logger.info("jina.ai 内容获取成功")
+
+            # --- 通用文本清理逻辑 ---
+            # 1. 移除URL链接 (保留微信的清理逻辑，但对Jina可能不需要)
+            if "weixin.qq.com" not in url:
+                 text = re.sub(r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\\\\(\\\\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+', '', text)
+
+            # 2. 移除邮箱地址
+            text = re.sub(r'[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}', '', text)
+
+            # 3. 移除多余的空格和换行 (保留，对两者都有用)
+            text = re.sub(r'\\s+', ' ', text)
+            text = text.replace('\\n', ' ') # 将换行符替换为空格，避免过多空行
+
+            # 4. 移除特殊字符 (保留，但对中文内容可能过于激进，稍作调整)
+            # text = re.sub(r'[^\w\s\u4e00-\u9fff.,!?，。！？]', '', text) # 原逻辑
+            # 修正Linter错误：
+            text = re.sub(r'[^\w\s\u4e00-\u9fff,.!?;:"，。！？；："()"（）《》【】「」￥$@%#&*_=+`~^<>|\/\[\]{}-]', '', text) # 统一引号并确保括号闭合
+
+            # 5. 移除数字编号 (保留)
+            text = re.sub(r'^\d+\.\s*', '', text, flags=re.MULTILINE)
+
+            # 6. 移除重复的标点符号 (保留)
+            text = re.sub(r'([.,!?，。！？])\\1+', r'\\1', text)
+
+            # 7. 移除多余空行 (调整逻辑，先合并空格再处理)
+            text = re.sub(r' {2,}', ' ', text) # 合并多个空格
+            text = text.strip() # 移除首尾空格
+
+            # 8. 移除行首行尾的空白 (已通过 strip 处理)
+
+            # 如果内容太短，可能是没有正确获取
+            if len(text) < 50:
+                logger.warning("获取到的内容太短，可能未正确获取文章内容")
+                return None, None # 返回 None 内容和 None 标题
+            
+            # 记录最终返回前的 repr
+            logger.debug(f"Final text before return (repr): {repr(text[:500])}...")
+            # 如果是 Jina 路径，尝试提取标题
+            if "weixin.qq.com" not in url:
+                lines = text.split('\n')
+                extracted_title = next((line.strip() for line in lines if line.strip()), None)
+            # 否则 extracted_title 已在微信路径中设置
+            logger.debug(f"Extracted title before return: {extracted_title}")
+            return text, extracted_title
+                
+        except Exception as e:
+            logger.error(f"获取网页内容时出错: {e}")
+            return None, None # 异常也返回 None, None
+
     def handle_url(self, content, e_context):
-        logger.info('Handling Sum4All request...')
-        # 根据sum_service的值选择API密钥和基础URL
-        if self.url_sum_service == "openai":
-            api_key = self.open_ai_api_key
-            api_base = self.open_ai_api_base
-            model = self.model
-        elif self.url_sum_service == "sum4all":
-            api_key = self.sum4all_key
-            api_base = "https://pro.sum4all.site/v1"
-            model = "sum4all"
-        elif self.url_sum_service == "gemini":
-            api_key = self.gemini_key
-            model = "gemini"
-            api_base = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent"
-        else:
-            logger.error(f"未知的sum_service配置: {self.url_sum_service}")
+        logger.info('Handling OpenAI request...')
+        # 只处理 OpenAI 服务
+        if self.url_sum_service != "openai":
+            logger.error(f"当前配置的服务不是 OpenAI: {self.url_sum_service}")
             return
+            
+        api_key = self.open_ai_api_key
+        # 修改API基础URL的格式，确保使用http而不是https
+        api_base = self.open_ai_api_base.replace('https://', 'http://')
+        model = self.model
         
         msg: ChatMessage = e_context["context"]["msg"]
         user_id = msg.from_user_id
         user_params = self.params_cache.get(user_id, {})
-        isgroup = e_context["context"].get("isgroup", False)
         prompt = user_params.get('prompt', self.url_sum_prompt)
-        headers = {
-            'Content-Type': 'application/json',
-            'Authorization': f'Bearer {api_key}'
-        }
-        payload = json.dumps({
-            "link": content,
-            "prompt": prompt,
-            "model": model,
-            "base": api_base
-        })
-        additional_content = ""  # 在 try 块之前初始化 additional_content
+        
+        # 获取网页内容
+        webpage_content = self.get_webpage_content(content)
+        if not webpage_content:
+            reply_content = "无法获取网页内容，请检查链接是否有效"
+        else:
+            # 构建 OpenAI API 请求
+            headers = {
+                'Content-Type': 'application/json',
+                'Authorization': f'Bearer {api_key}'
+            }
+            
+            # 构建系统提示词
+            system_prompt = """你是一个专业的网页内容总结专家。请按照以下格式总结网页内容：
+1. 首先用一句话总结文章的核心观点（30字以内）
+2. 然后列出3-5个关键要点
+3. 使用emoji让表达更生动
+4. 保持专业、客观的语气"""
 
-        try:
-            logger.info('Sending request to LLM...')
-            api_url = "https://ai.sum4all.site"
-            response = requests.post(api_url, headers=headers, data=payload)
-            response.raise_for_status()
-            logger.info('Received response from LLM.')
-            response_data = response.json()  # 解析响应的 JSON 数据
-            if response_data.get("success"):
-                content = response_data["content"].replace("\\n", "\n")  # 替换 \\n 为 \n
-                self.params_cache[user_id]['content'] = content
+            # 构建用户提示词
+            user_prompt = f"""请总结以下网页内容：
+{prompt}
 
-                # 新增加的部分，用于解析 meta 数据
-                meta = response_data.get("meta", {})  # 如果没有 meta 数据，则默认为空字典
-                title = meta.get("og:title", "")  # 获取 og:title，如果没有则默认为空字符串
-                self.params_cache[user_id]['title'] = title
-                # 只有当 title 非空时，才加入到回复中
-                if title:
-                    additional_content += f"{title}\n\n"
-                reply_content = additional_content + content  # 将内容加入回复
+网页内容：
+{webpage_content[:4000]}  # 限制内容长度，避免超出token限制"""
+
+            # 构建请求体
+            payload = {
+                "model": model,
+                "messages": [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt}
+                ],
+                "temperature": 0.7,
+                "max_tokens": 1000
+            }
+
+            additional_content = ""
+            try:
+                logger.info('Sending request to OpenAI...')
+                # 直接调用 OpenAI API，禁用SSL验证
+                response = requests.post(
+                    f"{api_base}/chat/completions",
+                    headers=headers,
+                    json=payload,
+                    verify=False  # 禁用SSL验证
+                )
+                response.raise_for_status()
+                logger.info('Received response from OpenAI.')
                 
-            else:
-                reply_content = "Content not found or error in response"
+                response_data = response.json()
+                if "choices" in response_data and len(response_data["choices"]) > 0:
+                    content = response_data["choices"][0]["message"]["content"]
+                    self.params_cache[user_id]['content'] = content
+                    
+                    # 尝试从内容中提取标题（第一行）
+                    lines = content.split('\n')
+                    if lines:
+                        title = lines[0].strip()
+                        self.params_cache[user_id]['title'] = title
+                        if title:
+                            additional_content += f"{title}\n\n"
+                    
+                    reply_content = additional_content + content
+                else:
+                    reply_content = "无法获取有效的响应内容"
 
-        except requests.exceptions.RequestException as e:
-            # 处理可能出现的错误
-            logger.error(f"Error calling new combined api: {e}")
-            reply_content = f"An error occurred"
+            except requests.exceptions.RequestException as e:
+                logger.error(f"Error calling OpenAI API: {e}")
+                reply_content = f"调用 OpenAI API 时发生错误: {str(e)}"
 
         reply = Reply()
         reply.type = ReplyType.TEXT
@@ -398,7 +565,8 @@ class sum4all(Plugin):
         elif isgroup or not self.note_enabled:
             reply.content = f"{remove_markdown(reply_content)}\n\n💬5min内输入{self.url_sum_qa_prefix}+问题，可继续追问"
         elif self.note_enabled:
-            reply.content = f"{remove_markdown(reply_content)}\n\n💬5min内输入{self.url_sum_qa_prefix}+问题，可继续追问。\n\n📒输入{self.note_prefix}+笔记，可发送当前总结&笔记到{self.note_service}"
+            reply.content = f"{remove_markdown(reply_content)}\n\n💬5min内输入{self.url_sum_qa_prefix}+问题，可继续追问\n💡输入{self.note_prefix}+笔记，可保存到{self.note_service}"
+        
         e_context["reply"] = reply
         e_context.action = EventAction.BREAK_PASS
     def handle_bibigpt(self, content, e_context):    
@@ -478,61 +646,171 @@ class sum4all(Plugin):
             api_key = self.open_ai_api_key
             api_base = self.open_ai_api_base
             model = self.model
+            headers = {
+                'Content-Type': 'application/json',
+                'Authorization': f'Bearer {api_key}'
+            }
+            
+            # 构建系统提示词
+            system_prompt = """你是一个专业的搜索专家。请根据用户的问题，从搜索结果中提取相关信息，并按照以下格式回答：
+1. 首先用一句话总结答案的核心观点（30字以内）
+2. 然后列出3-5个关键要点
+3. 使用emoji让表达更生动
+4. 保持专业、客观的语气"""
+
+            # 构建用户提示词
+            user_prompt = f"""请根据以下问题搜索并总结：
+{content[len(self.search_sum_search_prefix):]}
+
+搜索服务：{self.search_service}"""
+
+            # 构建请求体
+            payload = {
+                "model": model,
+                "messages": [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt}
+                ],
+                "temperature": 0.7,
+                "max_tokens": 1000
+            }
+
+            try:
+                response = requests.post(
+                    f"{api_base}/chat/completions",
+                    headers=headers,
+                    json=payload
+                )
+                response.raise_for_status()
+                response_data = response.json()
+                
+                if "choices" in response_data and len(response_data["choices"]) > 0:
+                    reply_content = response_data["choices"][0]["message"]["content"]
+                else:
+                    reply_content = "无法获取有效的响应内容"
+
+            except requests.exceptions.RequestException as e:
+                logger.error(f"Error calling OpenAI API: {e}")
+                reply_content = f"调用 OpenAI API 时发生错误: {str(e)}"
+
         elif self.search_sum_service == "sum4all":
             api_key = self.sum4all_key
             api_base = "https://pro.sum4all.site/v1"
             model = "sum4all"
+            headers = {
+                'Content-Type': 'application/json',
+                'Authorization': f'Bearer {api_key}'
+            }
+            payload = {
+                "ur": content[len(self.search_sum_search_prefix):],
+                "prompt": self.search_sum_prompt,
+                "model": model,
+                "base": api_base,
+                "search1api_key": self.search1api_key,
+                "search_service": self.search_service
+            }
+            try:
+                response = requests.post(api_base, headers=headers, json=payload)
+                response.raise_for_status()
+                response_data = response.json()
+                if response_data.get("success"):
+                    reply_content = response_data["content"].replace("\\n", "\n")
+                else:
+                    reply_content = "无法获取有效的响应内容"
+            except requests.exceptions.RequestException as e:
+                logger.error(f"Error calling Sum4All API: {e}")
+                reply_content = f"调用 Sum4All API 时发生错误: {str(e)}"
+
         elif self.search_sum_service == "gemini":
             api_key = self.gemini_key
             model = "gemini"
-            api_base = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent"
+            api_base = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
+            headers = {
+                'Content-Type': 'application/json',
+                'x-goog-api-key': api_key
+            }
+            
+            system_prompt = """你是一个专业的搜索专家。请根据用户的问题，从搜索结果中提取相关信息，并按照以下格式回答：
+1. 首先用一句话总结答案的核心观点（30字以内）
+2. 然后列出3-5个关键要点
+3. 使用emoji让表达更生动
+4. 保持专业、客观的语气"""
+
+            user_prompt = f"""请根据以下问题搜索并总结：
+{content[len(self.search_sum_search_prefix):]}
+
+搜索服务：{self.search_service}"""
+
+            payload = {
+                "contents": [
+                    {"role": "user", "parts": [{"text": system_prompt}]},
+                    {"role": "model", "parts": [{"text": "okay"}]},
+                    {"role": "user", "parts": [{"text": user_prompt}]}
+                ],
+                "generationConfig": {
+                    "maxOutputTokens": 800
+                }
+            }
+
+            try:
+                response = requests.post(api_base, headers=headers, json=payload)
+                response.raise_for_status()
+                response_data = response.json()
+                
+                if "candidates" in response_data and len(response_data["candidates"]) > 0:
+                    reply_content = response_data["candidates"][0]["content"]["parts"][0]["text"]
+                else:
+                    reply_content = "无法获取有效的响应内容"
+
+            except requests.exceptions.RequestException as e:
+                logger.error(f"Error calling Gemini API: {e}")
+                reply_content = f"调用 Gemini API 时发生错误: {str(e)}"
+
+        elif self.search_sum_service == "azure":
+            api_key = self.open_ai_api_key
+            api_base = f"{self.open_ai_api_base}/openai/deployments/{self.azure_deployment_id}/chat/completions?api-version=2024-02-15-preview"
+            model = self.model
+            headers = {
+                'Content-Type': 'application/json',
+                'api-key': api_key
+            }
+            
+            system_prompt = """你是一个专业的搜索专家。请根据用户的问题，从搜索结果中提取相关信息，并按照以下格式回答：
+1. 首先用一句话总结答案的核心观点（30字以内）
+2. 然后列出3-5个关键要点
+3. 使用emoji让表达更生动
+4. 保持专业、客观的语气"""
+
+            user_prompt = f"""请根据以下问题搜索并总结：
+{content[len(self.search_sum_search_prefix):]}
+
+搜索服务：{self.search_service}"""
+
+            payload = {
+                "model": model,
+                "messages": [
+                    {"role": "system", "content": system_prompt},
+                    {"role": "user", "content": user_prompt}
+                ]
+            }
+
+            try:
+                response = requests.post(api_base, headers=headers, json=payload)
+                response.raise_for_status()
+                response_data = response.json()
+                
+                if "choices" in response_data and len(response_data["choices"]) > 0:
+                    reply_content = response_data["choices"][0]["message"]["content"]
+                else:
+                    reply_content = "无法获取有效的响应内容"
+
+            except requests.exceptions.RequestException as e:
+                logger.error(f"Error calling Azure API: {e}")
+                reply_content = f"调用 Azure API 时发生错误: {str(e)}"
 
         else:
             logger.error(f"未知的search_service配置: {self.search_sum_service}")
             return
-        headers = {
-            'Content-Type': 'application/json',
-            'Authorization': f'Bearer {api_key}'
-        }
-        content = content[len(self.search_sum_search_prefix):]
-        payload = json.dumps({
-            "ur": content,
-            "prompt": self.search_sum_prompt,
-            "model": model,
-            "base": api_base,
-            "search1api_key": self.search1api_key,
-            "search_service": self.search_service  
-        })
-        try:
-            api_url = "https://ai.sum4all.site"
-            response = requests.post(api_url, headers=headers, data=payload)
-            response.raise_for_status()
-            response_data = response.json()  # 解析响应的 JSON 数据
-            if response_data.get("success"):
-                content = response_data["content"].replace("\\n", "\n")  # 替换 \\n 为 \n
-                reply_content = content  # 将内容加入回复
-
-                # 解析 meta 数据
-                meta = response_data.get("meta", {})  # 如果没有 meta 数据，则默认为空字典
-                title = meta.get("og:title", "")  # 获取 og:title，如果没有则默认为空字符串
-                og_url = meta.get("og:url", "")  # 获取 og:url，如果没有则默认为空字符串
-                # 打印 title 和 og_url 以调试
-                print("Title:", title)
-                print("Original URL:", og_url)                
-                # 只有当 title 和 url 非空时，才加入到回复中
-                if title:
-                    reply_content += f"\n\n参考文章：{title}"
-                if og_url:
-                    short_url = self.short_url(og_url)  # 获取短链接
-                    reply_content += f"\n\n参考链接：{short_url}"                
-
-            else:
-                content = "Content not found or error in response"
-
-        except requests.exceptions.RequestException as e:
-            # 处理可能出现的错误
-            logger.error(f"Error calling new combined api: {e}")
-            reply_content = f"An error occurred"
 
         reply = Reply()
         reply.type = ReplyType.TEXT
@@ -601,7 +879,16 @@ class sum4all(Plugin):
         elif self.file_sum_service == "gemini":
             api_key = self.gemini_key
             model = "gemini"
-            api_base = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent"
+            api_base = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
+        elif self.file_sum_service == "aliyun":
+            reply_content = self.handle_aliyun_file(content, e_context)
+            
+            reply = Reply()
+            reply.type = ReplyType.TEXT
+            reply.content = f"{remove_markdown(reply_content)}\n\n💬5min内输入{self.file_sum_qa_prefix}+问题，可继续追问" 
+            e_context["reply"] = reply
+            e_context.action = EventAction.BREAK_PASS
+            return
         else:
             logger.error(f"未知的sum_service配置: {self.file_sum_service}")
             return
@@ -638,6 +925,90 @@ class sum4all(Plugin):
                 ]
             }
             api_url = api_base
+        elif self.file_sum_service == "aliyun":
+            api_key = self.aliyun_key
+            model = "aliyun"
+            api_base = self.aliyun_base_url
+            
+            if has_openai:
+                # 使用OpenAI客户端库
+                try:
+                    logger.info(f"使用OpenAI客户端调用阿里云API: {api_base}")
+                    client = OpenAI(
+                        api_key=api_key,
+                        base_url=api_base
+                    )
+                    
+                    completion = client.chat.completions.create(
+                        model=self.aliyun_sum_model,
+                        messages=[
+                            {"role": "system", "content": prompt},
+                            {"role": "user", "content": content}
+                        ],
+                        temperature=0.7,
+                        max_tokens=2000
+                    )
+                    
+                    logger.info("OpenAI客户端成功获取响应")
+                    response_content = completion.choices[0].message.content.strip()
+                    return response_content.replace("\\n", "\n")
+                    
+                except Exception as e:
+                    logger.error(f"使用OpenAI客户端调用阿里云API出错: {e}")
+                    logger.info("转为使用requests直接调用")
+            
+            # 使用requests直接调用
+            try:
+                logger.info("使用requests直接调用阿里云API")
+                headers = {
+                    'Content-Type': 'application/json',
+                    'Authorization': f'Bearer {api_key}'
+                }
+                
+                data = {
+                    "model": self.aliyun_sum_model,
+                    "messages": [
+                        {"role": "system", "content": prompt},
+                        {"role": "user", "content": content}
+                    ],
+                    "temperature": 0.7,
+                    "max_tokens": 2000
+                }
+                
+                api_url = api_base if "/chat/completions" in api_base else f"{api_base}/chat/completions"
+                logger.info(f"请求URL: {api_url}")
+                
+                response = requests.post(
+                    api_url,
+                    headers=headers,
+                    json=data,
+                    verify=False,
+                    timeout=30
+                )
+                
+                response.raise_for_status()
+                logger.info(f"API响应状态码: {response.status_code}")
+                
+                response_data = response.json()
+                if "choices" in response_data and len(response_data["choices"]) > 0:
+                    first_choice = response_data["choices"][0]
+                    if "message" in first_choice and "content" in first_choice["message"]:
+                        response_content = first_choice["message"]["content"].strip()
+                        logger.info("成功获取阿里云API响应内容")
+                        return response_content.replace("\\n", "\n")
+                    else:
+                        logger.error("阿里云API响应中未找到内容字段")
+                        return "未能从阿里云API获取有效的响应内容"
+                else:
+                    logger.error("阿里云API响应中未找到choices字段")
+                    return "未能从阿里云API获取有效的响应内容"
+                    
+            except Exception as e:
+                logger.error(f"调用阿里云API时出错: {e}")
+                if hasattr(e, 'response') and e.response:
+                    logger.error(f"响应状态码: {e.response.status_code}")
+                    logger.error(f"响应内容: {e.response.text}")
+                return f"调用阿里云API时发生错误: {str(e)}"
         else:
             headers = {
                 'Content-Type': 'application/json',
@@ -678,7 +1049,7 @@ class sum4all(Plugin):
                 if "choices" in response_data and len(response_data["choices"]) > 0:
                     first_choice = response_data["choices"][0]
                     if "message" in first_choice and "content" in first_choice["message"]:
-                        response_content = first_choice["message"]["content"].strip()  # 获取响应内容
+                        response_content = first_choice["message"]["content"].strip()
                         logger.info(f"LLM API response content")  # 记录响应内容
                         reply_content = response_content.replace("\\n", "\n")  # 替换 \\n 为 \n
                     else:
@@ -835,7 +1206,7 @@ class sum4all(Plugin):
             }
         elif self.image_sum_service == "gemini":
             api_key = self.gemini_key
-            api_base = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent"
+            api_base = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
             payload = {
                 "contents": [
                     {
@@ -858,56 +1229,92 @@ class sum4all(Plugin):
                 "Content-Type": "application/json",
                 "x-goog-api-key": api_key
             }
-
+        elif self.image_sum_service == "aliyun":
+            api_key = self.aliyun_key
+            api_base = self.aliyun_base_url
+            
+            if has_openai:
+                # 使用OpenAI客户端库
+                try:
+                    client = OpenAI(
+                        api_key=api_key,
+                        base_url=api_base
+                    )
+                    
+                    completion = client.chat.completions.create(
+                        model=self.aliyun_vl_model,
+                        messages=[
+                            {"role": "system", "content": self.image_sum_prompt},
+                            {"role": "user", "content": [{"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}]}
+                        ],
+                        temperature=0.7,
+                        max_tokens=2000
+                    )
+                    
+                    reply_content = completion.choices[0].message.content
+                    
+                except Exception as e:
+                    logger.error(f"Error using OpenAI client for Aliyun API: {e}")
+                    # 失败后回退到直接使用requests
+                    headers = {
+                        'Content-Type': 'application/json',
+                        'Authorization': f'Bearer {api_key}'
+                    }
+                    payload = {
+                        "model": self.aliyun_vl_model,
+                        "messages": [
+                            {"role": "system", "content": self.image_sum_prompt},
+                            {"role": "user", "content": [{"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}]}
+                        ],
+                        "temperature": 0.7,
+                        "max_tokens": 2000
+                    }
+                    response = requests.post(
+                        api_base if "/chat/completions" in api_base else f"{api_base}/chat/completions",
+                        headers=headers,
+                        json=payload,
+                        verify=False,
+                        timeout=30
+                    )
+                    response.raise_for_status()
+                    result = response.json()
+                    if "choices" in result and len(result["choices"]) > 0:
+                        reply_content = result["choices"][0]["message"]["content"]
+                    else:
+                        logger.error("阿里百炼 API 返回格式错误")
+                        reply_content = "总结失败，请稍后重试"
+            else:
+                # 使用requests直接调用
+                headers = {
+                    'Content-Type': 'application/json',
+                    'Authorization': f'Bearer {api_key}'
+                }
+                payload = {
+                    "model": self.aliyun_vl_model,
+                    "messages": [
+                        {"role": "system", "content": self.image_sum_prompt},
+                        {"role": "user", "content": [{"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}]}
+                    ],
+                    "temperature": 0.7,
+                    "max_tokens": 2000
+                }
+                response = requests.post(
+                    api_base if "/chat/completions" in api_base else f"{api_base}/chat/completions",
+                    headers=headers,
+                    json=payload,
+                    verify=False,
+                    timeout=30
+                )
+                response.raise_for_status()
+                result = response.json()
+                if "choices" in result and len(result["choices"]) > 0:
+                    reply_content = result["choices"][0]["message"]["content"]
+                else:
+                    logger.error("阿里百炼 API 返回格式错误")
+                    reply_content = "总结失败，请稍后重试"
         else:
             logger.error(f"未知的image_sum_service配置: {self.image_sum_service}")
             return
-
-        if self.image_sum_service != "gemini":
-            payload = {
-                "model": model,
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": [
-                            {
-                                "type": "text",
-                                "text": prompt
-                            },
-                            {
-                                "type": "image_url",
-                                "image_url": {
-                                    "url": f"data:image/jpeg;base64,{base64_image}"
-                                }
-                            }
-                        ]
-                    }
-                ],
-                "max_tokens": 3000
-            }
-        try:
-            response = requests.post(api_base, headers=headers, json=payload)
-            response.raise_for_status()
-            response_json = response.json()
-
-            if self.image_sum_service == "gemini":
-                reply_content = response_json.get('candidates', [{}])[0].get('content', {}).get('parts', [{}])[0].get('text', 'No text found in the response')
-            else:
-                if "choices" in response_json and len(response_json["choices"]) > 0:
-                    first_choice = response_json["choices"][0]
-                    if "message" in first_choice and "content" in first_choice["message"]:
-                        response_content = first_choice["message"]["content"].strip()
-                        logger.info("LLM API response content")
-                        reply_content = response_content
-                    else:
-                        logger.error("Content not found in the response")
-                        reply_content = "Content not found in the LLM API response"
-                else:
-                    logger.error("No choices available in the response")
-                    reply_content = "No choices available in the LLM API response"
-        except Exception as e:
-            logger.error(f"Error processing LLM API response: {e}")
-            reply_content = f"An error occurred while processing LLM API response"
 
         reply = Reply()
         reply.type = ReplyType.TEXT
@@ -915,6 +1322,541 @@ class sum4all(Plugin):
         e_context["reply"] = reply
         e_context.action = EventAction.BREAK_PASS
     
+    def handle_sum4all(self, content, e_context):
+        logger.info('Handling Sum4All request...')
+        # 由于sum4all.site服务不可用，我们改用OpenAI API
+        api_key = self.open_ai_api_key
+        api_base = self.open_ai_api_base
+        model = self.model
+        
+        msg: ChatMessage = e_context["context"]["msg"]
+        user_id = msg.from_user_id
+        user_params = self.params_cache.get(user_id, {})
+        isgroup = e_context["context"].get("isgroup", False)
+        prompt = user_params.get('prompt', self.url_sum_prompt)
+        
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {api_key}'
+        }
+        
+        # 构建系统提示词
+        system_prompt = """你是一个专业的网页内容总结专家。请按照以下格式总结网页内容：
+1. 首先用一句话总结文章的核心观点（30字以内）
+2. 然后列出3-5个关键要点
+3. 使用emoji让表达更生动
+4. 保持专业、客观的语气"""
+
+        # 构建用户提示词
+        user_prompt = f"""请总结以下网页内容：
+{prompt}
+
+网页链接：{content}"""
+
+        # 构建请求体
+        payload = {
+            "model": model,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ],
+            "temperature": 0.7,
+            "max_tokens": 1000
+        }
+
+        try:
+            response = requests.post(
+                f"{api_base}/chat/completions",
+                headers=headers,
+                json=payload,
+                verify=False  # 禁用SSL验证
+            )
+            response.raise_for_status()
+            response_data = response.json()
+            
+            if "choices" in response_data and len(response_data["choices"]) > 0:
+                content = response_data["choices"][0]["message"]["content"]
+                self.params_cache[user_id]['content'] = content
+                
+                # 尝试从内容中提取标题（第一行）
+                lines = content.split('\n')
+                if lines:
+                    title = lines[0].strip()
+                    self.params_cache[user_id]['title'] = title
+                
+                additional_content = ""
+                if title:
+                    additional_content += f"{title}\n\n"
+                reply_content = additional_content + content
+            else:
+                reply_content = "无法获取有效的响应内容"
+
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error calling OpenAI API: {e}")
+            reply_content = f"调用 OpenAI API 时发生错误: {str(e)}"
+
+        reply = Reply()
+        reply.type = ReplyType.TEXT
+        if not self.url_sum_qa_enabled:
+            reply.content = remove_markdown(reply_content)
+        elif isgroup or not self.note_enabled:
+            reply.content = f"{remove_markdown(reply_content)}\n\n💬5min内输入{self.url_sum_qa_prefix}+问题，可继续追问"
+        elif self.note_enabled:
+            reply.content = f"{remove_markdown(reply_content)}\n\n💬5min内输入{self.url_sum_qa_prefix}+问题，可继续追问\n💡输入{self.note_prefix}+笔记，可保存到{self.note_service}"
+        
+        e_context["reply"] = reply
+        e_context.action = EventAction.BREAK_PASS
+
+    def handle_gemini(self, content, e_context):
+        logger.info('Handling Gemini request...')
+        # 获取网页内容
+        webpage_content = self.get_webpage_content(content)
+        if not webpage_content:
+            reply_content = "无法获取网页内容，请检查链接是否有效"
+        else:
+            api_key = self.gemini_key
+            model = "gemini"
+            api_base = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
+            
+            msg: ChatMessage = e_context["context"]["msg"]
+            user_id = msg.from_user_id
+            user_params = self.params_cache.get(user_id, {})
+            isgroup = e_context["context"].get("isgroup", False)
+            prompt = user_params.get('prompt', self.url_sum_prompt)
+            
+            headers = {
+                'Content-Type': 'application/json',
+                'x-goog-api-key': api_key
+            }
+            
+            # 构建系统提示词
+            system_prompt = """你是一个专业的网页内容总结专家。请按照以下格式总结网页内容：
+1. 首先用一句话总结文章的核心观点（30字以内）
+2. 然后列出3-5个关键要点
+3. 使用emoji让表达更生动
+4. 保持专业、客观的语气"""
+
+            # 构建用户提示词
+            user_prompt = f"""请总结以下网页内容：
+{prompt}
+
+网页内容：
+{webpage_content[:4000]}  # 限制内容长度，避免超出token限制"""
+
+            payload = {
+                "contents": [
+                    {"role": "user", "parts": [{"text": system_prompt}]},
+                    {"role": "model", "parts": [{"text": "okay"}]},
+                    {"role": "user", "parts": [{"text": user_prompt}]}
+                ],
+                "generationConfig": {
+                    "maxOutputTokens": 800
+                }
+            }
+
+            additional_content = ""
+            try:
+                logger.info('Sending request to Gemini...')
+                response = requests.post(
+                    api_base,
+                    headers=headers,
+                    json=payload,
+                    verify=False
+                )
+                response.raise_for_status()
+                logger.info('Received response from Gemini.')
+                
+                response_data = response.json()
+                if "candidates" in response_data and len(response_data["candidates"]) > 0:
+                    content = response_data["candidates"][0]["content"]["parts"][0]["text"]
+                    self.params_cache[user_id]['content'] = content
+                    
+                    # 尝试从内容中提取标题（第一行）
+                    lines = content.split('\n')
+                    if lines:
+                        title = lines[0].strip()
+                        self.params_cache[user_id]['title'] = title
+                        if title:
+                            additional_content += f"{title}\n\n"
+                    
+                    reply_content = additional_content + content
+                else:
+                    reply_content = "无法获取有效的响应内容"
+
+            except requests.exceptions.RequestException as e:
+                logger.error(f"Error calling Gemini API: {e}")
+                reply_content = f"调用 Gemini API 时发生错误: {str(e)}"
+
+        reply = Reply()
+        reply.type = ReplyType.TEXT
+        if not self.url_sum_qa_enabled:
+            reply.content = remove_markdown(reply_content)
+        elif isgroup or not self.note_enabled:
+            reply.content = f"{remove_markdown(reply_content)}\n\n💬5min内输入{self.url_sum_qa_prefix}+问题，可继续追问"
+        elif self.note_enabled:
+            reply.content = f"{remove_markdown(reply_content)}\n\n💬5min内输入{self.url_sum_qa_prefix}+问题，可继续追问\n💡输入{self.note_prefix}+笔记，可保存到{self.note_service}"
+        
+        e_context["reply"] = reply
+        e_context.action = EventAction.BREAK_PASS
+
+    def handle_azure(self, content, e_context):
+        logger.info('Handling Azure request...')
+        api_key = self.open_ai_api_key
+        api_base = f"{self.open_ai_api_base}/openai/deployments/{self.azure_deployment_id}/chat/completions?api-version=2024-02-15-preview"
+        model = self.model
+        
+        msg: ChatMessage = e_context["context"]["msg"]
+        user_id = msg.from_user_id
+        user_params = self.params_cache.get(user_id, {})
+        isgroup = e_context["context"].get("isgroup", False)
+        prompt = user_params.get('prompt', self.url_sum_prompt)
+        
+        headers = {
+            'Content-Type': 'application/json',
+            'api-key': api_key
+        }
+        
+        system_prompt = """你是一个专业的网页内容总结专家。请按照以下格式总结网页内容：
+1. 首先用一句话总结文章的核心观点（30字以内）
+2. 然后列出3-5个关键要点
+3. 使用emoji让表达更生动
+4. 保持专业、客观的语气"""
+
+        user_prompt = f"""请总结以下网页内容：
+{prompt}
+
+网页链接：{content}"""
+
+        payload = {
+            "model": model,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_prompt}
+            ]
+        }
+
+        try:
+            response = requests.post(api_base, headers=headers, json=payload, verify=False)  # 禁用SSL验证
+            response.raise_for_status()
+            response_data = response.json()
+            
+            if "choices" in response_data and len(response_data["choices"]) > 0:
+                content = response_data["choices"][0]["message"]["content"]
+                self.params_cache[user_id]['content'] = content
+                
+                lines = content.split('\n')
+                if lines:
+                    title = lines[0].strip()
+                    self.params_cache[user_id]['title'] = title
+                
+                additional_content = ""
+                if title:
+                    additional_content += f"{title}\n\n"
+                reply_content = additional_content + content
+            else:
+                reply_content = "无法获取有效的响应内容"
+
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Error calling Azure API: {e}")
+            reply_content = f"调用 Azure API 时发生错误: {str(e)}"
+
+        reply = Reply()
+        reply.type = ReplyType.TEXT
+        if not self.url_sum_qa_enabled:
+            reply.content = remove_markdown(reply_content)
+        elif isgroup or not self.note_enabled:
+            reply.content = f"{remove_markdown(reply_content)}\n\n💬5min内输入{self.url_sum_qa_prefix}+问题，可继续追问"
+        elif self.note_enabled:
+            reply.content = f"{remove_markdown(reply_content)}\n\n💬5min内输入{self.url_sum_qa_prefix}+问题，可继续追问\n💡输入{self.note_prefix}+笔记，可保存到{self.note_service}"
+        
+        e_context["reply"] = reply
+        e_context.action = EventAction.BREAK_PASS
+
+    def handle_aliyun_url(self, content, e_context):
+        logger.info('Handling Aliyun request for URL...')
+        # 1. 获取网页内容和标题
+        webpage_content, webpage_title = self.get_webpage_content(content)
+        if not webpage_content:
+            reply_content = "无法获取网页内容，请检查链接是否有效"
+            # 直接构建回复并返回
+            reply = Reply()
+            reply.type = ReplyType.TEXT
+            reply.content = reply_content
+            e_context["reply"] = reply
+            e_context.action = EventAction.BREAK_PASS
+            return # 提前返回
+        else:
+            # 2. 获取配置和参数
+            api_key = self.aliyun_key
+            api_base = self.aliyun_base_url
+            
+            msg: ChatMessage = e_context["context"]["msg"]
+            user_id = msg.from_user_id
+            user_params = self.params_cache.get(user_id, {})
+            isgroup = e_context["context"].get("isgroup", False)
+            prompt = user_params.get('prompt', self.url_sum_prompt)
+            
+            reply_content = "处理时发生未知错误" # 初始化默认错误消息
+            try:
+                logger.info('Sending request to Aliyun...')
+                logger.info(f'Request URL: {api_base}')
+                
+                result_content = None # 初始化结果内容
+                if has_openai:
+                    # 使用OpenAI客户端库
+                    try:
+                        client = OpenAI(
+                            api_key=api_key,
+                            base_url=api_base
+                        )
+                        
+                        # -- 更新 Prompt --
+                        # 新的系统 Prompt
+                        new_system_prompt = (
+                            '你是一个新闻专家，我会给你发文章标题和内容，请你用简单明了的语言做总结。'
+                            '请严格按照以下格式输出：\n'
+                            '📰《*{文章标题}*》\n\n'
+                            '📌总结\n'
+                            '一句话讲清楚整篇文章的核心观点，控制在30字左右。\n\n'
+                            '💡要点\n'
+                            '用数字序号列出来3-5个文章的核心内容，尽量使用emoji让你的表达更生动'
+                        )
+
+                        # 新的用户 Prompt 内容
+                        if webpage_title:
+                            user_content = f"文章标题：{webpage_title}\n\n文章内容：\n{webpage_content[:5800]}"
+                        else:
+                            # 如果没有提取到标题，则不包含标题前缀
+                            user_content = webpage_content[:6000]
+
+                        # 构造 messages 列表
+                        messages_to_send = [
+                            {"role": "system", "content": new_system_prompt}, # 使用新的 system prompt
+                            {"role": "user", "content": user_content} # 使用新的 user content
+                        ]
+                        # 添加日志记录
+                        logger.debug(f"Messages sent to Aliyun (OpenAI client): {[{"role": "system", "content": new_system_prompt}, {"role": "user", "content": user_content}]}")
+                        
+                        completion = client.chat.completions.create(
+                            model=self.aliyun_sum_model,
+                            messages=[
+                                {"role": "system", "content": new_system_prompt},
+                                {"role": "user", "content": user_content}
+                            ],
+                            temperature=0.7,
+                            max_tokens=2000
+                        )
+                        
+                        result_content = completion.choices[0].message.content # 获取总结结果
+                        
+                    except Exception as e:
+                        logger.error(f"Error using OpenAI client for Aliyun API: {e}")
+                        # 失败后回退到直接使用requests
+                        # 这里不需要 raise e，让它继续尝试 requests
+                        logger.info("Falling back to requests...")
+                        pass # 继续执行下面的 else 块
+                        
+                # 如果没有 OpenAI 库或者 OpenAI 客户端调用失败
+                if result_content is None:
+                    # 使用requests直接调用
+                    headers = {
+                        'Content-Type': 'application/json',
+                        'Authorization': f'Bearer {api_key}'
+                    }
+                    
+                    # 构建请求体
+                    payload = {
+                        "model": self.aliyun_sum_model,
+                        "messages": [
+                            {"role": "system", "content": new_system_prompt}, # 使用新的 system prompt
+                            {"role": "user", "content": user_content} # 使用新的 user content
+                        ],
+                        "temperature": 0.7,
+                        "max_tokens": 2000
+                    }
+                    # 添加日志记录 (在调用前记录)
+                    logger.debug(f"Messages sent to Aliyun (requests): {payload['messages']}")
+                     
+                    logger.info(f'Request headers: {headers}')
+                    logger.info(f'Request payload: {payload}')
+                    response = requests.post(
+                        api_base if "/chat/completions" in api_base else f"{api_base}/chat/completions",
+                        headers=headers,
+                        json=payload,
+                        verify=False,
+                        timeout=30
+                    )
+                    response.raise_for_status()
+                    logger.info('Received response from Aliyun via requests.')
+                    
+                    response_data = response.json()
+                    if "choices" in response_data and len(response_data["choices"]) > 0:
+                        result_content = response_data["choices"][0]["message"]["content"]
+                    else:
+                        logger.error('Aliyun API response via requests missing choices.')
+                        reply_content = "无法获取有效的响应内容 (requests)"
+                        raise Exception("Invalid API response via requests") # 触发外层 except
+
+                # -- 统一处理获取到的 result_content --
+                if result_content:
+                    # 新的组装逻辑 (移除，直接使用 result_content)
+                    # 修正缩进
+                    reply_content = result_content
+
+                    # 更新缓存
+                    self.params_cache[user_id]['content'] = result_content # 缓存总结内容
+                    if webpage_title:
+                       self.params_cache[user_id]['title'] = webpage_title # 缓存提取的标题
+                else:
+                    # 如果 result_content 仍然是 None (两个方法都失败了)
+                    reply_content = "无法从阿里云获取总结内容"
+
+            except Exception as e:
+                # 捕获所有 API 调用和处理中的异常
+                logger.error(f"Error calling Aliyun API or processing result: {e}")
+                logger.error(f"Error details: {str(e)}")
+                if hasattr(e, 'response') and e.response:
+                    logger.error(f"Response status code: {e.response.status_code}")
+                    logger.error(f"Response content: {e.response.text}")
+                # 如果 reply_content 仍然是初始错误消息，则使用通用错误
+                if reply_content == "处理时发生未知错误": 
+                    reply_content = f"调用阿里百炼 API 时发生错误: {str(e)}"
+
+        # -- 统一构建最终回复 --
+        reply = Reply()
+        reply.type = ReplyType.TEXT
+        if not self.url_sum_qa_enabled:
+            reply.content = remove_markdown(reply_content)
+        elif isgroup or not self.note_enabled:
+            reply.content = f"{remove_markdown(reply_content)}\n\n💬5min内输入{self.url_sum_qa_prefix}+问题，可继续追问"
+        elif self.note_enabled:
+            reply.content = f"{remove_markdown(reply_content)}\n\n💬5min内输入{self.url_sum_qa_prefix}+问题，可继续追问\n💡输入{self.note_prefix}+笔记，可保存到{self.note_service}"
+        
+        e_context["reply"] = reply
+        e_context.action = EventAction.BREAK_PASS
+
+    def handle_aliyun_file(self, content, e_context):
+        logger.info("handle_aliyun_file: 使用阿里云API处理文件内容")
+        api_key = self.aliyun_key
+        api_base = self.aliyun_base_url
+        
+        msg: ChatMessage = e_context["context"]["msg"]
+        user_id = msg.from_user_id
+        user_params = self.params_cache.get(user_id, {})
+        prompt = user_params.get('prompt', self.file_sum_prompt)
+        
+        if has_openai:
+            # 使用OpenAI客户端库
+            try:
+                logger.info(f"使用OpenAI客户端调用阿里云API: {api_base}")
+                client = OpenAI(
+                    api_key=api_key,
+                    base_url=api_base
+                )
+                
+                completion = client.chat.completions.create(
+                    model=self.aliyun_sum_model,
+                    messages=[
+                        {"role": "system", "content": prompt},
+                        {"role": "user", "content": content}
+                    ],
+                    temperature=0.7,
+                    max_tokens=2000
+                )
+                
+                logger.info("OpenAI客户端成功获取响应")
+                response_content = completion.choices[0].message.content.strip()
+                return response_content.replace("\\n", "\n")
+                
+            except Exception as e:
+                logger.error(f"使用OpenAI客户端调用阿里云API出错: {e}")
+                logger.info("转为使用requests直接调用")
+        
+        # 使用requests直接调用
+        try:
+            logger.info("使用requests直接调用阿里云API")
+            headers = {
+                'Content-Type': 'application/json',
+                'Authorization': f'Bearer {api_key}'
+            }
+            
+            data = {
+                "model": self.aliyun_sum_model,
+                "messages": [
+                    {"role": "system", "content": prompt},
+                    {"role": "user", "content": content}
+                ],
+                "temperature": 0.7,
+                "max_tokens": 2000
+            }
+            
+            api_url = api_base if "/chat/completions" in api_base else f"{api_base}/chat/completions"
+            logger.info(f"请求URL: {api_url}")
+            
+            response = requests.post(
+                api_url,
+                headers=headers,
+                json=data,
+                verify=False,
+                timeout=30
+            )
+            
+            response.raise_for_status()
+            logger.info(f"API响应状态码: {response.status_code}")
+            
+            response_data = response.json()
+            if "choices" in response_data and len(response_data["choices"]) > 0:
+                first_choice = response_data["choices"][0]
+                if "message" in first_choice and "content" in first_choice["message"]:
+                    response_content = first_choice["message"]["content"].strip()
+                    logger.info("成功获取阿里云API响应内容")
+                    return response_content.replace("\\n", "\n")
+                else:
+                    logger.error("阿里云API响应中未找到内容字段")
+                    return "未能从阿里云API获取有效的响应内容"
+            else:
+                logger.error("阿里云API响应中未找到choices字段")
+                return "未能从阿里云API获取有效的响应内容"
+                
+        except Exception as e:
+            logger.error(f"调用阿里云API时出错: {e}")
+            if hasattr(e, 'response') and e.response:
+                logger.error(f"响应状态码: {e.response.status_code}")
+                logger.error(f"响应内容: {e.response.text}")
+            return f"调用阿里云API时发生错误: {str(e)}"
+        
+    def extract_content(self, file_path):
+        logger.info(f"extract_content: 提取文件内容，文件路径: {file_path}")
+        file_size = os.path.getsize(file_path) // 1000  # 将文件大小转换为KB
+        if file_size > int(self.max_file_size):
+            logger.warning(f"文件大小超过限制({self.max_file_size}KB),不进行处理。文件大小: {file_size}KB")
+            return None
+        file_extension = os.path.splitext(file_path)[1][1:].lower()
+        logger.info(f"extract_content: 文件类型为 {file_extension}")
+
+        file_type = EXTENSION_TO_TYPE.get(file_extension)
+
+        if not file_type:
+            logger.error(f"不支持的文件扩展名: {file_extension}")
+            return None
+
+        read_func = {
+            'pdf': self.read_pdf,
+            'docx': self.read_word,
+            'md': self.read_markdown,
+            'txt': self.read_txt,
+            'excel': self.read_excel,
+            'csv': self.read_csv,
+            'html': self.read_html,
+            'ppt': self.read_ppt
+        }.get(file_type)
+
+        if not read_func:
+            logger.error(f"不支持的文件类型: {file_type}")
+            return None
+        logger.info("extract_content: 文件内容提取完成")
+        return read_func(file_path)
+
 def remove_markdown(text):
     # 替换Markdown的粗体标记
     text = text.replace("**", "")
