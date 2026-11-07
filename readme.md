@@ -75,7 +75,7 @@
 |------|----------|------|----------|-----------|
 | OpenAI | 搜索、文件、图片、绝大部分网页文章 | 无需额外申请服务，舍得花钱的话，效果最可控 | [OpenAI](https://platform.openai.com/account/api-keys) \| [LinkAI代理](https://sum4all.site/linkai) | ![OpenAI](picture/openai.png) |
 | sum4all | 搜索、文件、图片、绝大部分网页文章 | 自建的代理服务，包含 OpenAI 全模型，官网同价 | [sum4all](https://sum4all.site/key) | ![Sum4all](picture/sum4all.png) |
-| search1api | Google、Bing、Duckduckgo搜索 | 搜索聚合服务，注册免费送 100 积分，$0.99/1000次每个月| [search1api](https://www.search1api.com/?utm_source=sum4all)| ![search1api](picture/search1api.png) |
+| search1api | Google、Bing、Duckduckgo搜索 | 搜索聚合服务，注册免费送 100 积分，$0.99/1000次每个月| [search1api](https://s1.dev/?utm_source=sum4all)| ![search1api](picture/search1api.png) |
 | Gemini | 搜索、文件、图片、绝大部分网页文章 | Google最新大模型，免费 | [gemini](https://sum4all.site/google) | ![Gemini](picture/gemini.png) |
 | Azure | 文件、图片 | 微软部署的OpenAI | [Azure](https://oai.azure.com) | ![Azure](picture/azure.png) |
 | Perplexity | 搜索 | 国外的搜索总结服务，速度快，价格贵，自带大模型，需自行注册和付费 | [Perplexity](https://sum4all.site/perplexity) | ![Perplexity](picture/p.png) | ![Alt text](picture/WX20231201-004639@2x.png) |
